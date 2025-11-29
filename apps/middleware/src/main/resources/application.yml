@@ -12,9 +12,15 @@ bff:
     endpoint: http://localhost:11434/api/generate
     model: tinyllama
     timeoutMs: 10000
+    enabled: true
   mcp:
     endpoint: http://localhost:8069/mcp
     timeoutMs: 10000
+    enabled: true
+    mockEnabled: true
+    testApiKey: test
+    testRole: user
+    testProfile: default
   rate-limit:
     enabled: true
     requests-per-minute: 60

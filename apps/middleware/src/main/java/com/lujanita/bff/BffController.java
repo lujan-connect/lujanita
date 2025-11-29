@@ -14,6 +14,7 @@ import com.lujanita.bff.mcp.McpClientService;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import jakarta.annotation.PostConstruct;
+import com.lujanita.bff.config.BffProperties;
 
 @RestController
 @RequestMapping("/api")
@@ -24,11 +25,10 @@ public class BffController {
     private OllamaClientService ollamaClientService;
     @Autowired
     private McpClientService mcpClientService;
+    @Autowired
+    private BffProperties bffProperties;
 
     private static final Logger log = LoggerFactory.getLogger(BffController.class);
-    // Feature flags (ejemplo)
-    private static final boolean FEATURE_OLLAMA = true;
-    private static final boolean FEATURE_MCP = true;
 
     /**
      * Endpoint de chat conversacional (orquesta con Ollama y MCP si corresponde)
@@ -36,15 +36,18 @@ public class BffController {
     @PostMapping("/chat")
     public ResponseEntity<String> chat(@RequestHeader Map<String, String> headers, @RequestBody Map<String, Object> body) {
         log.info("Headers received: {}", headers);  // Debug: ver qué headers llegan
+        // Normalizar headers a minúsculas para evitar problemas de case
+        Map<String, String> normHeaders = new HashMap<>();
+        headers.forEach((k, v) -> normHeaders.put(k.toLowerCase(), v));
         String message = (String) body.get("message");
         String resp;
         String correlationId = UUID.randomUUID().toString();
         try {
-            if (!FEATURE_OLLAMA) {
+            if (!bffProperties.getOllama().isEnabled()) {
                 log.warn("[BFF][{}] LLM deshabilitado por feature flag", correlationId);
                 return ResponseEntity.status(503).body("{\"code\":\"LLM001\",\"correlationId\":\""+correlationId+"\"}");
             }
-            resp = orchestrator.handleChat(headers, message);
+            resp = orchestrator.handleChat(normHeaders, message);
         } catch (Exception e) {
             log.error("[BFF][{}] Error backend: {}", correlationId, e.getMessage());
             return ResponseEntity.status(502).body("{\"code\":\"MW005\",\"correlationId\":\""+correlationId+"\"}");
@@ -74,17 +77,20 @@ public class BffController {
      */
     @PostMapping("/mcp/{method}")
     public ResponseEntity<McpResponse> mcpGeneric(@RequestHeader Map<String, String> headers, @PathVariable String method, @RequestBody Map<String, Object> params) {
+        // Normalizar headers a minúsculas
+        Map<String, String> normHeaders = new HashMap<>();
+        headers.forEach((k, v) -> normHeaders.put(k.toLowerCase(), v));
         String correlationId = UUID.randomUUID().toString();
         McpResponse resp;
         try {
-            if (!FEATURE_MCP) {
+            if (!bffProperties.getMcp().isEnabled()) {
                 resp = new McpResponse();
                 resp.setCode("OD001");
                 resp.setCorrelationId(correlationId);
                 resp.setMessage("MCP deshabilitado por feature flag");
                 return ResponseEntity.status(503).body(resp);
             }
-            resp = orchestrator.handleMcpGeneric(headers, method, params);
+            resp = orchestrator.handleMcpGeneric(normHeaders, method, params);
         } catch (Exception e) {
             resp = new McpResponse();
             resp.setCode("MW005");
@@ -111,17 +117,19 @@ public class BffController {
 
         // Verificar salud de Ollama
         try {
-            // Llamada rápida de prueba a Ollama
-            ollamaClientService.generate("tinyllama", "health check");
-            components.put("ollama", Map.of("status", "up", "model", "tinyllama"));
+            ollamaClientService.generate(bffProperties.getOllama().getModel(), "health check");
+            components.put("ollama", Map.of("status", "up", "model", bffProperties.getOllama().getModel()));
         } catch (Exception e) {
             components.put("ollama", Map.of("status", "down", "error", e.getMessage()));
         }
 
         // Verificar salud de MCP
         try {
-            // Llamada rápida de prueba a MCP
-            Map<String, String> dummyHeaders = Map.of("X-Api-Key", "test", "X-Role", "user", "X-Profile", "default");
+            Map<String, String> dummyHeaders = Map.of(
+                "X-Api-Key", bffProperties.getMcp().getTestApiKey(),
+                "X-Role", bffProperties.getMcp().getTestRole(),
+                "X-Profile", bffProperties.getMcp().getTestProfile()
+            );
             mcpClientService.callMcp("orders.get", Map.of("orderId", "health"), dummyHeaders);
             components.put("odoo", Map.of("status", "up", "latencyMs", 50));
         } catch (Exception e) {

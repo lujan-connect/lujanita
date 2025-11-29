@@ -25,20 +25,42 @@ public class BffProperties {
         private String endpoint;
         private String model;
         private int timeoutMs;
+        private boolean enabled = true;
+        // Prompt de sistema configurable que se prefija a cada petición al LLM
+        private String systemPrompt = "Eres Lujanita, un asistente conversacional para Odoo de una empresa de logística en Argentina. Responde en castellano y explica las funcionalidades de Odoo en lenguaje natural, adaptando el tono a un usuario profesional pero accesible.";
         public String getEndpoint() { return endpoint; }
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
         public String getModel() { return model; }
         public void setModel(String model) { this.model = model; }
         public int getTimeoutMs() { return timeoutMs; }
         public void setTimeoutMs(int timeoutMs) { this.timeoutMs = timeoutMs; }
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public String getSystemPrompt() { return systemPrompt; }
+        public void setSystemPrompt(String systemPrompt) { this.systemPrompt = systemPrompt; }
     }
     public static class Mcp {
         private String endpoint;
         private int timeoutMs;
+        private boolean enabled = true;
+        private boolean mockEnabled = false;
+        private String testApiKey = "test";
+        private String testRole = "user";
+        private String testProfile = "default";
         public String getEndpoint() { return endpoint; }
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
         public int getTimeoutMs() { return timeoutMs; }
         public void setTimeoutMs(int timeoutMs) { this.timeoutMs = timeoutMs; }
+        public boolean isEnabled() { return enabled; }
+        public void setEnabled(boolean enabled) { this.enabled = enabled; }
+        public boolean isMockEnabled() { return mockEnabled; }
+        public void setMockEnabled(boolean mockEnabled) { this.mockEnabled = mockEnabled; }
+        public String getTestApiKey() { return testApiKey; }
+        public void setTestApiKey(String testApiKey) { this.testApiKey = testApiKey; }
+        public String getTestRole() { return testRole; }
+        public void setTestRole(String testRole) { this.testRole = testRole; }
+        public String getTestProfile() { return testProfile; }
+        public void setTestProfile(String testProfile) { this.testProfile = testProfile; }
     }
     public static class RateLimit {
         private boolean enabled;
