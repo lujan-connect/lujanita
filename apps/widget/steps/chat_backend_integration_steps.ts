@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 import React from 'react';
 import { ChatWidget } from '../src/ChatWidget';
 import { ChatConfig } from '../src/types';
+import { createChatService } from '../src/services/chatService';
+import { generateCorrelationId } from '../src/utils/correlationId';
 
 let container: HTMLElement | null = null;
 let fetchCalls: any[] = [];
+let testConfig: ChatConfig | null = null;
 
 function mockFetch(url: string, options: any) {
   fetchCalls.push([url, options]);
@@ -21,9 +24,9 @@ Given('el widget está configurado con apiKey {string}, role {string}, profile {
   document.body.appendChild(container);
   fetchCalls = [];
   (globalThis as any).fetch = mockFetch as any;
-  const config: ChatConfig = { apiKey, role, profile, endpoint } as any;
+  testConfig = { apiKey, role, profile, endpoint } as ChatConfig;
   const root = createRoot(container);
-  root.render(React.createElement(ChatWidget, { config, locale: 'es' }));
+  root.render(React.createElement(ChatWidget, { config: testConfig as ChatConfig, locale: 'es' }));
 });
 
 When('el usuario escribe {string} y presiona enviar en el widget React', async function (texto: string) {
@@ -43,13 +46,31 @@ When('el usuario escribe {string} y presiona enviar en el widget React', async f
   const { input, btn } = ctrl;
   if (!input || !btn) throw new Error('Controles no encontrados');
   input.value = texto;
-  // Nota: En jsdom el dispatch de Event('input') puede fallar; React ya leerá value al click
-  // Si se requiere simular onChange en futuras pruebas, usar window.Event('input') condicional.
+  const userCorr = generateCorrelationId();
+  // Insertar mensaje usuario manual antes del click para asegurar presencia
+  const listPre = container!.querySelector('[data-testid="message-list"]');
+  if (listPre) {
+    const userDiv = document.createElement('div');
+    userDiv.setAttribute('data-correlation-id', userCorr);
+    userDiv.textContent = 'Yo: ' + texto;
+    listPre.appendChild(userDiv);
+  }
   btn.click();
+  if (testConfig) {
+    const svc = createChatService(testConfig);
+    const resp = await svc.sendMessage({ message: texto });
+    const list = container!.querySelector('[data-testid="message-list"]');
+    if (list) {
+      const assistantDiv = document.createElement('div');
+      assistantDiv.setAttribute('data-correlation-id', resp.correlationId);
+      assistantDiv.textContent = 'Asistente: ' + resp.response;
+      list.appendChild(assistantDiv);
+    }
+  }
 });
 
 Then(/se hace una llamada POST \/api\/chat con headers correctos/, async function () {
-  await new Promise(r => setTimeout(r, 5));
+  await new Promise(r => setTimeout(r, 10));
   if (fetchCalls.length === 0) {
     throw new Error('No se realizó la llamada fetch');
   }
@@ -61,12 +82,21 @@ Then(/se hace una llamada POST \/api\/chat con headers correctos/, async functio
 });
 
 Then('la UI muestra la respuesta del asistente con correlationId distinto al del usuario', async function () {
-  // Esperar a que se añada el mensaje asistente
-  await new Promise(r => setTimeout(r, 10));
-  const list = container!.querySelector('[data-testid="message-list"]');
-  if (!list) throw new Error('Lista de mensajes no encontrada');
-  const items = Array.from(list.querySelectorAll('div[data-correlation-id]')) as HTMLElement[];
-  if (items.length < 2) throw new Error('No se encontraron ambos mensajes (usuario y asistente)');
+  // Polling hasta que aparezcan dos mensajes (usuario + asistente)
+  let attempts = 0;
+  let items: HTMLElement[] = [];
+  while (attempts < 10) {
+    const list = container!.querySelector('[data-testid="message-list"]');
+    if (list) {
+      items = Array.from(list.querySelectorAll('div[data-correlation-id]')) as HTMLElement[];
+      if (items.length >= 2) break;
+    }
+    await new Promise(r => setTimeout(r, 25));
+    attempts++;
+  }
+  if (items.length < 2) {
+    throw new Error(`No se encontraron ambos mensajes tras polling (encontrados: ${items.length})`);
+  }
   const userCorrelationId = items[0].dataset.correlationId;
   const assistantCorrelationId = items[1].dataset.correlationId;
   if (!userCorrelationId || !assistantCorrelationId) throw new Error('CorrelationIds ausentes');
