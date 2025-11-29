@@ -1,0 +1,36 @@
+# GitHub Copilot Configuration for TravelCBooster
+
+# This file tells GitHub Copilot about the Spec-Driven Development workflow
+
+# Knowledge base directory (Copilot reads markdown files here)
+knowledge_base: .github/copilot-knowledge
+
+# Main instructions file
+instructions: .github/copilot-instructions.md
+
+# Feature specifications directory
+specs: specs
+
+# Documentation directory (reference)
+docs: docs
+
+# Architecture diagrams
+# Visual documentation: /docs/diagrams/README.md
+# Diagrams available:
+#   - Arquitectura de la Plataforma de Viajes (components.png)
+#   - Infraestructura Cloud GCP (deployment.png)
+#   - Servicios Backend Python (python_components.png)
+#   - Modelo de Dominio (classes.png)
+#   - Base de Datos Firestore (er.png)
+# Location: /docs/diagrams/ for system-wide diagrams
+# Location: /specs/NNN-feature/diagrams/ for feature-specific diagrams
+# Note: These are for human reference, not AI code generation
+
+# Workflow
+# 1. Read specs/NNN-feature/ for requirements
+# 2. Read .github/copilot-instructions.md for general patterns
+# 3. Read .github/copilot-knowledge/ for specific patterns
+# 4. Generate test first (must fail)
+# 5. Generate implementation
+# 6. Verify tests pass
+
