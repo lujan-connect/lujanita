@@ -1,0 +1,23 @@
+# Middleware ignorados
+.cucumber/
+# Tests
+
+logs/
+*.log
+# Logs
+
+.DS_Store
+.vscode/
+*.iml
+.idea/
+# IDEs
+
+mvnw.cmd
+mvnw
+.mvn/
+*.ear
+*.war
+*.jar
+*.class
+target/
+
