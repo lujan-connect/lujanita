@@ -2,8 +2,6 @@ import fetchImport from 'node-fetch';
 import { ChatConfig, ChatRequestDTO, ChatResponseDTO } from '../types';
 import { generateCorrelationId } from '../utils/correlationId';
 
-const runtimeFetch: typeof fetchImport = (globalThis as any).fetch || (fetchImport as any);
-
 export interface ChatService {
   sendMessage(req: ChatRequestDTO): Promise<ChatResponseDTO>;
 }
@@ -12,8 +10,10 @@ export function createChatService(config: ChatConfig): ChatService {
   const baseUrl = config.endpoint.replace(/\/$/, '');
   return {
     async sendMessage(req: ChatRequestDTO): Promise<ChatResponseDTO> {
+      // Resolver fetch dinámicamente para permitir mock en tests/BDD
+      const f: any = (globalThis as any).fetch || fetchImport;
       const correlationId = generateCorrelationId();
-      const res = await runtimeFetch(`${baseUrl}/api/chat`, {
+      const res = await f(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -25,29 +25,26 @@ export const ChatWidget: React.FC<Props> = ({ config, locale = 'es' }) => {
     } as any;
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    // Defer para permitir que React procese el setState antes del fetch y steps lo capturen
-    setTimeout(async () => {
-      try {
-        const resp = await chatServiceRef.current.sendMessage({ message: userMsg.content });
-        const assistantMsg: ChatMessage = {
-          id: `${Date.now().toString()}-a`,
-          role: 'assistant',
-          content: resp.response,
-          timestamp: new Date().toISOString(),
-          correlationId: resp.correlationId
-        } as any;
-        setMessages(prev => [...prev, assistantMsg]);
-      } catch (e: any) {
-        const errorMsg: ChatMessage = {
-          id: `${Date.now().toString()}-err`,
-          role: 'system',
-          content: `Error: ${e.message}`,
-          timestamp: new Date().toISOString(),
-          correlationId: userMsg.correlationId
-        } as any;
-        setMessages(prev => [...prev, errorMsg]);
-      }
-    }, 0);
+    try {
+      const resp = await chatServiceRef.current.sendMessage({ message: userMsg.content });
+      const assistantMsg: ChatMessage = {
+        id: `${Date.now().toString()}-a`,
+        role: 'assistant',
+        content: resp.response,
+        timestamp: new Date().toISOString(),
+        correlationId: resp.correlationId
+      } as any;
+      setMessages(prev => [...prev, assistantMsg]);
+    } catch (e: any) {
+      const errorMsg: ChatMessage = {
+        id: `${Date.now().toString()}-err`,
+        role: 'system',
+        content: `Error: ${e.message}`,
+        timestamp: new Date().toISOString(),
+        correlationId: userMsg.correlationId
+      } as any;
+      setMessages(prev => [...prev, errorMsg]);
+    }
   };
 
   const primary = config.primaryColor || '#0066cc';

@@ -49,8 +49,7 @@ When('el usuario escribe {string} y presiona enviar en el widget React', async f
 });
 
 Then(/se hace una llamada POST \/api\/chat con headers correctos/, async function () {
-  // Esperar microtask + fetch
-  await Promise.resolve();
+  await new Promise(r => setTimeout(r, 5));
   if (fetchCalls.length === 0) {
     throw new Error('No se realizó la llamada fetch');
   }
