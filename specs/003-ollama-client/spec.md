@@ -1,124 +1,92 @@
----
-title: Integración con LLM Ollama (Embebido)
-version: 1.0.0
-date_created: 2025-11-29
-last_updated: 2025-11-29
-owner: Lujanita Team
-tags: [middleware, llm, ollama, sdd]
-spec_phase: specify
----
+# Especificación 003 - Cliente Ollama (ollama-client)
+(placeholder)
+## Lecciones Aprendidas (Se actualizará al finalizar)
 
-# 003 - ollama-client
+- US-003-06 → FR-3008, FR-3010
+- US-003-05 → FR-3007
+- US-003-04 → FR-3005, FR-3006
+- US-003-03 → FR-3004
+- US-003-02 → FR-3002, FR-3003
+- US-003-01 → FR-3001, FR-3009, FR-3012
+User Stories ↔ FR:
+## Trazabilidad
 
-## Permalink: ollama-client
+- Config central (Spring Boot `@ConfigurationProperties`).
+- Sistema de archivos para cargar plantillas.
+- Librería: `ollama4j` (o HTTP directo). Decisión en `plan.md`.
+## Dependencias
 
-Diseñar la interacción del middleware con el servidor Ollama embebido (modelo liviano) para soporte conversacional e inferencias.
+- Modelos no disponibles generan cascada de fallos (healthCheck proactivo en warmup).
+- Plantillas mal formadas causan prompts inválidos (agregar validación JSON/YAML schema).
+- Sobrecarga si múltiples streams simultáneos (mitigar con límites de concurrentes).
+## Riesgos
 
-## 1. Propósito y Alcance
+- Cambiar una plantilla en disco se refleja en la siguiente llamada sin reinicio (lazy reload detectado por timestamp).
+- Logs contienen `correlationId` y códigos de error correctos.
+- En falla simulada de streaming se observa fallback y respuesta completa final.
+- Se reciben eventos streaming y el último evento incluye flag `done=true` y conteo total de tokens.
+## Criterios de Aceptación
 
-**Propósito**: Permitir al middleware delegar tareas de lenguaje natural (chat, clasificación de intención, generación breve) a Ollama.
+- NFR-3004: Cobertura de pruebas unitarias ≥ 80% para lógica de construcción de prompt y manejo de errores.
+- NFR-3003: Recuperación ante fallo de streaming < 500ms adicional.
+- NFR-3002: El cliente no debe bloquear el hilo principal (usar async/reactive o thread pool controlado).
+- NFR-3001: Latencia p95 < 1500ms para modelos ligeros en condiciones normales.
+## Requisitos No Funcionales (NFR)
 
-**Alcance**:
-- In scope:
-  - Operación de chat: prompt y mensajes en formato `{ role, content }`
-  - Opciones de inferencia: `temperature`, `maxTokens`, `stream=false`
-  - Métricas básicas: tokens y duración
-  - Manejo de errores específicos de Ollama (modelo no disponible, timeout)
-- Out of scope:
-  - Fine-tuning o carga dinámica avanzada de modelos
-- Future scope:
-  - Streaming (SSE/WebSocket)
-  - Embeddings (`ollama.embed`) para búsqueda semántica
+- FR-3012: Incluir función de sanitización básica (remover secuencias peligrosas) antes de envío.
+- FR-3011: Exponer método para pre-chequear disponibilidad del modelo (`healthCheck()`).
+- FR-3010: Soportar selección de modelo por role/profile (tabla de mapeo interna).
+- FR-3009: Validar longitud de prompt: si supera límite configurado (`maxPromptChars`), truncar contexto histórico y emitir warning.
+- FR-3008: Plantillas deben poder cargarse desde archivo YAML/JSON caliente (directorio configurable) sin reinicio.
+- FR-3007: Mapear errores a códigos: TIMEOUT→LLM001, MODEL_NOT_FOUND→LLM002, STREAM_INTERRUPTED→LLM003, UNKNOWN→LLM099.
+- FR-3006: Incluir en todos los logs: `correlationId`, `llmModel`, `role`, `profile`.
+- FR-3005: Registrar métricas: `ollama_latency_ms`, `ollama_tokens_in`, `ollama_tokens_out`, `ollama_prompt_chars`.
+- FR-3004: Si streaming falla (error o timeout configurado), invocar automáticamente modo completo (fallback) y loggear evento `stream_fallback=true`.
+- FR-3003: En streaming, debe emitir eventos internos con fragmentos y marcar fin con `done`.
+- FR-3002: Debe soportar modo streaming y modo completo (flag `stream=true/false`).
+- FR-3001: El cliente debe construir el prompt concatenando: `systemTemplate(role, profile)` + `userMessage` + contexto adicional (opcional histórico último N).
+## Requisitos Funcionales (FR)
 
-## 2. Definiciones
+"Como administrador quiero poder definir diferentes versiones de plantillas de prompt por role/profile sin redeploy completo del BFF."
+### US-003-06: Versionado de plantillas
 
-- Ollama: servidor local de LLM
-- Modelo por defecto: `tinyllama` (o `phi-2` según configuración)
-- Contexto/PROMPT por rol/perfil: parámetros enviados desde clientes (UI/BFF) que definen el prompt del sistema (contexto previo) y ajustes del prompt de usuario según `role` y `profile`.
+"Como desarrollador del BFF quiero recibir códigos de error LLM00X claros cuando Ollama falle (timeout, invalid model, rate limit interno, etc.)."
+### US-003-05: Manejo de errores estandarizado
 
-## 3. Historias de Usuario y Criterios
+"Como ingeniero de observabilidad quiero registrar latencia, cantidad de tokens y tamaño del prompt para monitoreo y alertas."
+### US-003-04: Métricas y logs
 
-### US-LLM-001: Respuesta conversacional
-Como middleware necesito generar una respuesta breve a partir de un mensaje.
-- Given un mensaje `{ role: 'user', content: '...' }`
-- When llamo a `ollama.chat`
-- Then obtengo `{ response: '...', metrics: { durationMs, promptTokens, completionTokens } }`
+"Como servicio BFF quiero que si falla el streaming (timeout o desconexión), se realice un pedido de respuesta completa y se entregue al cliente."
+### US-003-03: Fallback a respuesta completa
 
-### US-LLM-002: Manejo de errores de modelo
-Como middleware necesito detectar si el modelo no está disponible y decidir fallback.
-- Given `model=tinyllama` no disponible
-- When llamo a `ollama.chat`
-- Then recibo error `MODEL_NOT_FOUND` y registro alerta
+"Como servicio BFF necesito recibir la respuesta desde Ollama token a token para reenviarla en streaming al widget."
+### US-003-02: Streaming de tokens
 
-## 4. Requisitos Funcionales
+"Como servicio BFF quiero enviar un prompt a Ollama que combine la plantilla base y el contexto del usuario (role/profile) para obtener una respuesta personalizada."
+### US-003-01: Solicitud de respuesta contextual
+## User Stories
 
-- FR-LLM-001: Definir DTOs de request/response para chat con `messages` y `options`.
-- FR-LLM-002: Permitir configuración de `model` (`tinyllama` por defecto) y `temperature`, `maxTokens`.
-- FR-LLM-003: Retornar métricas básicas en la respuesta.
-- FR-LLM-004: Mapear y propagar errores de Ollama a códigos `LLM00X`.
-- FR-LLM-005: Logs estructurados con `correlationId`.
-- FR-LLM-006: Incluir `durationMs` siempre y `promptTokens`/`completionTokens` cuando estén disponibles; si faltan, registrar `metricsMissing=true` en logs.
-- FR-LLM-007: Opciones avanzadas (`top_p`, `frequency_penalty`) fuera de alcance en v1.
-- FR-LLM-008: Aceptar y propagar `systemPrompt` (contexto previo) y `userPromptOverrides` configurables por `role`/`profile`, enviados desde los clientes; el BFF debe inyectarlos en los `messages` como entrada a `ollama.chat`.
+- Equipo de datos (observabilidad / métricas).
+- Equipo de producto (definición de roles y perfiles).
+- Equipo de backend (BFF).
+## Stakeholders
 
-## 5. Criterios de Éxito
+- Moderación de contenido (se asume fuera en esta iteración).
+- Cache vectorial externa.
+- Fine-tuning de modelos.
+- Gestión avanzada de embeddings.
+## Fuera de Alcance
 
-- SC-LLM-001: 95% de inferencias en < 2.0s con `tinyllama`.
-- SC-LLM-002: Errores de disponibilidad y tiempo claramente registrados.
-- SC-LLM-003: Métricas disponibles para monitoreo básico.
+Incluye únicamente la capa de cliente hacia Ollama y su integración directa en el BFF. No cubre UI ni orquestación con MCP Odoo (eso será parte de la spec 004). Se limita a modelos ligeros embebidos (p.ej. `llama3:8b-instruct` o similar).
+## Alcance
 
-## 6. Entidades
+- Observabilidad (latencia, tamaño del prompt, tokens generados, coste estimado si aplica).
+- Manejo de errores con códigos normalizados (LLM00X).
+- Métricas y trazabilidad (`correlationId`).
+- Streaming de tokens y fallback a respuesta completa.
+- Plantillas de prompt configurables y versionadas.
+- Contexto dinámico por `apiKey`, `role` y `profile`.
+El objetivo de esta feature es proveer un cliente robusto dentro del BFF (antes llamado middleware) para interactuar con el modelo LLM embebido de Ollama en la VM, soportando:
+## Resumen
 
-- OllamaChatRequest: `{ model?: string, messages: Message[], options?: ChatOptions }`
-- Message: `{ role: 'system'|'user'|'assistant', content: string }`
-- ChatOptions: `{ temperature?: number, maxTokens?: number, stream?: boolean }`
-- OllamaChatResponse: `{ model: string, response: string, done: boolean, metrics?: ChatMetrics }`
-- ChatMetrics: `{ promptTokens?: number, completionTokens?: number, durationMs?: number }`
 
-## 7. Supuestos
-
-- Ollama accesible en `http://localhost:11434`
-- Modelos `tinyllama` y `phi-2` disponibles para pruebas
-
-## 8. Dependencias
-
-- Cliente `ollama4j`
-- Configuración en `application.yml` del middleware
-
-## 9. Riesgos
-
-- Latencia mayor en CPU: ajustar `maxTokens`
-- Modelos no disponibles: pre-carga y validación en health
-
-## 10. Aceptación (Resumen)
-
-- `ollama.chat` retorna respuesta y métricas
-- Errores mapeados correctamente (`MODEL_NOT_FOUND`, `OLLAMA_TIMEOUT`)
-
-## 11. [NEEDS CLARIFICATION]
-
-1) Modelo por defecto:
-   - [RESUELTO] `tinyllama` será el modelo por defecto en todos los entornos. `phi-2` podrá configurarse manualmente en entornos con más recursos.
-2) Métricas mínimas:
-   - [RESUELTO] `promptTokens` y `completionTokens` serán obligatorias en la respuesta cuando el proveedor (Ollama) las exponga; en caso de indisponibilidad, se registrará `metricsMissing=true` en logs, manteniendo `durationMs` siempre presente.
-3) Opciones soportadas:
-   - [RESUELTO] En v1 sólo se soportan `temperature`, `maxTokens` y `stream=false`; opciones avanzadas como `top_p` y `frequency_penalty` quedan fuera de alcance.
-
-## 12. Decisiones de Clarificación
-
-- Modelo por defecto:
-  - `model`: `tinyllama` por defecto; `phi-2` opcional vía configuración del BFF/middleware.
-- Métricas mínimas:
-  - `durationMs` siempre presente.
-  - `promptTokens` y `completionTokens` requeridas cuando disponibles; si faltan, se registra en logs el flag `metricsMissing=true`.
-- Opciones v1:
-  - Soportadas: `temperature`, `maxTokens`, `stream` (por defecto `false`).
-  - No soportadas: `top_p`, `frequency_penalty`.
-- Contexto/prompt por rol/perfil:
-  - Los clientes (UI/BFF) enviarán `role`, `profile`, `systemPrompt` y `userPromptOverrides`.
-  - El BFF construirá `messages` incluyendo un `system` message con `systemPrompt` y aplicará `userPromptOverrides` antes de llamar a `ollama.chat`.
-  - Registrar en logs el `role` y `profile` usados para auditoría (sin exponer contenido sensible del prompt).
-
-## 13. Calidad de Especificación
-
-Especificación atómica, orientada a integración clara y medible.

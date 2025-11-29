@@ -1,0 +1,5 @@
+[
+  {"id": "ss1", "userId": "u1", "serviceId": "s1", "status": "active"},
+  {"id": "ss2", "userId": "u2", "serviceId": "s2", "status": "active"}
+]
+

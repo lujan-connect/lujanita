@@ -1,77 +1,58 @@
----
-title: 004 - Data Model (odoo-mcp-client)
-version: 1.0.0
-date_created: 2025-11-29
-last_updated: 2025-11-29
-owner: Lujanita Team
-tags: [mcp, odoo, data-model]
----
+# data-model.md - 004-odoo-mcp-client
 
-# Modelos de Datos - odoo-mcp-client
+## Esquema de entidades MCP
 
-Alineado con MCP (Model Context Protocol) y el servidor de Odoo (`llm_mcp_server`). Claves en camelCase para coherencia con el BFF.
+- McpRequest: { method, params, headers }
+- McpResponse: { ...dinámico según método... }
+- Order: { orderId, status, totalAmount, customerName, lines }
+- Customer: { customerId, customerName, email, phone }
+- Product: { productId, productName, price }
 
-## Orders
+## Relaciones
+- Un McpRequest produce un McpResponse
+- Un Order puede tener múltiples lines
 
-### OrdersGetRequest
-- orderId: string (obligatorio)
-- includeLines: boolean (opcional, por defecto false)
+## Ejemplo de McpRequest (orders.get)
+```json
+{
+  "method": "orders.get",
+  "params": { "orderId": "SO001" },
+  "headers": {
+    "X-Api-Key": "...",
+    "X-Role": "user",
+    "X-Profile": "default"
+  }
+}
+```
 
-### OrdersGetResponse
-- orderId: string
-- status: string
-- customerName: string
-- totalAmount: number
-- createdAt: string (ISO 8601)
-- lines?: OrderLine[]
+## Ejemplo de McpResponse (orders.get)
+```json
+{
+  "orderId": "SO001",
+  "status": "confirmed",
+  "customerName": "Juan Perez",
+  "totalAmount": 123.45,
+  "createdAt": "2025-11-29T10:00:00Z",
+  "lines": [
+    { "productId": "P001", "productName": "Producto 1", "quantity": 2, "price": 50.0 }
+  ]
+}
+```
 
-### OrderLine
-- productId: string
-- productName: string
-- quantity: number
-- price: number
+## Ejemplo de error estructurado (MW004/MW005)
+```json
+{
+  "code": "MW004",
+  "message": "Parámetros inválidos"
+}
+```
 
-## Customers
+## Notas sobre extensibilidad
+- El campo `method` permite invocar cualquier tool soportado por el MCP server de Odoo (orders.get, customers.search, products.search, etc).
+- Los headers son obligatorios para autenticación y autorización.
+- La estructura de `params` depende del método/tool invocado.
+- Los errores siguen el esquema `{ code, message, correlationId? }`.
 
-### CustomersSearchRequest
-- query: string (obligatorio)
-- limit: number (opcional, por defecto 20)
-- offset: number (opcional, por defecto 0)
-
-### CustomersSearchResponse
-- customers: Customer[]
-- totalCount: number
-
-### Customer
-- customerId: string
-- name: string
-- email: string
-- phone?: string
-
-## Products
-
-### ProductsListRequest
-- available: boolean (opcional)
-- limit: number (opcional, por defecto 20)
-- offset: number (opcional, por defecto 0)
-
-### ProductsListResponse
-- products: Product[]
-- totalCount: number
-
-### Product
-- productId: string
-- name: string
-- price: number
-- available: boolean
-
-## Errores MCP (OD00X)
-- code: string (OD001, OD002, OD003)
-- message: string
-- details?: any
-
-## Notas
-- `totalCount` debe incluirse en listados para soportar paginación.
-- `createdAt` en formato ISO 8601.
-- `lines` en `OrdersGetResponse` sólo cuando `includeLines=true`.
-
+## Referencia
+- Protocolo MCP: [Odoo llm_mcp_server](https://apps.odoo.com/apps/modules/18.0/llm_mcp_server)
+- Documentación interna: `/docs/odoo-mcp.md`

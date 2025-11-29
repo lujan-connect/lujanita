@@ -27,3 +27,23 @@ Feature: Cliente Ollama en el BFF
     When el BFF envía mensajes a ollama.chat
     Then el primer mensaje es de role "system" con el contenido del systemPrompt
     And el mensaje de usuario aplica los overrides configurados
+
+  @FR-LLM-009
+  Scenario: Streaming de tokens
+    Given Ollama soporta streaming
+    When el BFF solicita respuesta con stream habilitado
+    Then la respuesta se recibe en fragmentos ordenados y el último fragmento tiene done=true
+
+  @FR-LLM-010
+  Scenario: Fallback automático si falla el streaming
+    Given Ollama soporta streaming
+    And ocurre un error de red durante el stream
+    When el BFF detecta la interrupción
+    Then se realiza una solicitud de respuesta completa y se marca stream_fallback=true en logs
+
+  @FR-LLM-011
+  Scenario: Recarga dinámica de plantillas
+    Given existe una plantilla de prompt para el rol "agent" y profile "default" versión "v1"
+    When se modifica el archivo de plantilla y se incrementa el timestamp
+    Then la siguiente generación usa la nueva versión de la plantilla sin reinicio del BFF
+

@@ -1,0 +1,34 @@
+# application.yml - Configuración Spring Boot BFF
+
+server:
+  port: 9000
+
+spring:
+  application:
+    name: lujanita-bff
+
+bff:
+  ollama:
+    endpoint: http://localhost:11434/api/generate
+    model: tinyllama
+    timeoutMs: 10000
+  mcp:
+    endpoint: http://localhost:8069/mcp
+    timeoutMs: 10000
+  rate-limit:
+    enabled: true
+    requests-per-minute: 60
+
+logging:
+  level:
+    root: INFO
+    com.lujanita.bff: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+

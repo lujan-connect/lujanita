@@ -1,0 +1,5 @@
+[
+  {"id": "inv1", "userId": "u1", "amount": 1200, "currency": "ARS"},
+  {"id": "inv2", "userId": "u2", "amount": 800, "currency": "ARS"}
+]
+
