@@ -3,8 +3,6 @@ package features.steps;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lujanita.bff.ollama.OllamaClientService;
-import io.github.ollama4j.model.GenerationOptions;
-import io.github.ollama4j.model.GenerationResponse;
 import io.cucumber.java.es.Dado;
 import io.cucumber.java.es.Cuando;
 import io.cucumber.java.es.Entonces;

@@ -4,15 +4,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.UUID;
+import com.lujanita.bff.model.dto.McpResponse;
+import com.lujanita.bff.ollama.OllamaClientService;
+import com.lujanita.bff.mcp.McpClientService;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import jakarta.annotation.PostConstruct;
 
 @RestController
 @RequestMapping("/api")
 public class BffController {
     @Autowired
     private BffOrchestratorService orchestrator;
+    @Autowired
+    private OllamaClientService ollamaClientService;
+    @Autowired
+    private McpClientService mcpClientService;
 
     private static final Logger log = LoggerFactory.getLogger(BffController.class);
     // Feature flags (ejemplo)
@@ -24,6 +35,7 @@ public class BffController {
      */
     @PostMapping("/chat")
     public ResponseEntity<String> chat(@RequestHeader Map<String, String> headers, @RequestBody Map<String, Object> body) {
+        log.info("Headers received: {}", headers);  // Debug: ver qué headers llegan
         String message = (String) body.get("message");
         String resp;
         String correlationId = UUID.randomUUID().toString();
@@ -61,24 +73,32 @@ public class BffController {
      * Ejemplo: POST /api/mcp/orders.get, /api/mcp/customers.search, etc.
      */
     @PostMapping("/mcp/{method}")
-    public ResponseEntity<String> mcpGeneric(@RequestHeader Map<String, String> headers, @PathVariable String method, @RequestBody Map<String, Object> params) {
-        String resp;
+    public ResponseEntity<McpResponse> mcpGeneric(@RequestHeader Map<String, String> headers, @PathVariable String method, @RequestBody Map<String, Object> params) {
         String correlationId = UUID.randomUUID().toString();
+        McpResponse resp;
         try {
             if (!FEATURE_MCP) {
-                log.warn("[BFF][{}] MCP deshabilitado por feature flag", correlationId);
-                return ResponseEntity.status(503).body("{\"code\":\"OD001\",\"correlationId\":\""+correlationId+"\"}");
+                resp = new McpResponse();
+                resp.setCode("OD001");
+                resp.setCorrelationId(correlationId);
+                resp.setMessage("MCP deshabilitado por feature flag");
+                return ResponseEntity.status(503).body(resp);
             }
             resp = orchestrator.handleMcpGeneric(headers, method, params);
         } catch (Exception e) {
-            log.error("[BFF][{}] Error backend MCP: {}", correlationId, e.getMessage());
-            return ResponseEntity.status(502).body("{\"code\":\"MW005\",\"correlationId\":\""+correlationId+"\"}");
+            resp = new McpResponse();
+            resp.setCode("MW005");
+            resp.setCorrelationId(correlationId);
+            resp.setMessage("Error backend MCP: " + e.getMessage());
+            return ResponseEntity.status(502).body(resp);
         }
-        if (resp.contains("\"code\":\"MW001\"")) {
+        if ("MW001".equals(resp.getCode())) {
             log.warn("[BFF][{}] Falta apiKey", correlationId);
+            resp.setCorrelationId(correlationId);
             return ResponseEntity.status(401).body(resp);
         }
         log.info("[BFF][{}] Respuesta MCP: {}", correlationId, resp);
+        resp.setCorrelationId(correlationId);
         return ResponseEntity.ok(resp);
     }
 
@@ -87,16 +107,72 @@ public class BffController {
      */
     @GetMapping("/health")
     public ResponseEntity<Map<String, Object>> health() {
-        // Simulación de health: status, versión, componentes
-        Map<String, Object> components = Map.of(
-            "ollama", Map.of("status", "ok", "model", "tinyllama"),
-            "odoo", Map.of("status", "ok", "latencyMs", 50)
-        );
+        Map<String, Object> components = new HashMap<>();
+
+        // Verificar salud de Ollama
+        try {
+            // Llamada rápida de prueba a Ollama
+            ollamaClientService.generate("tinyllama", "health check");
+            components.put("ollama", Map.of("status", "up", "model", "tinyllama"));
+        } catch (Exception e) {
+            components.put("ollama", Map.of("status", "down", "error", e.getMessage()));
+        }
+
+        // Verificar salud de MCP
+        try {
+            // Llamada rápida de prueba a MCP
+            Map<String, String> dummyHeaders = Map.of("X-Api-Key", "test", "X-Role", "user", "X-Profile", "default");
+            mcpClientService.callMcp("orders.get", Map.of("orderId", "health"), dummyHeaders);
+            components.put("odoo", Map.of("status", "up", "latencyMs", 50));
+        } catch (Exception e) {
+            components.put("odoo", Map.of("status", "down", "error", e.getMessage()));
+        }
+
+        // Determinar status general
+        boolean allUp = true;
+        for (Object comp : components.values()) {
+            if (!"up".equals(((Map<?, ?>) comp).get("status"))) {
+                allUp = false;
+                break;
+            }
+        }
+        String overallStatus = allUp ? "up" : "down";
+
         Map<String, Object> resp = Map.of(
-            "status", "ok",
+            "status", overallStatus,
             "version", "1.0.0",
             "components", components
         );
         return ResponseEntity.ok(resp);
+    }
+
+    @PostConstruct
+    public void init() {
+        // Lógica de inicialización, si es necesaria
+        log.info("Aplicación iniciada. Verificando salud de componentes...");
+        healthCheck();
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void healthCheck() {
+        log.info("Verificando salud de componentes al iniciar la aplicación...");
+
+        // Verificar salud de Ollama
+        try {
+            orchestrator.handleChat(Map.of("X-Api-Key", "test", "X-Role", "user", "X-Profile", "default"), "health check");
+            log.info("✅ Ollama: UP - Conexión exitosa");
+        } catch (Exception e) {
+            log.warn("❌ Ollama: DOWN - Error: {}", e.getMessage());
+        }
+
+        // Verificar salud de MCP
+        try {
+            orchestrator.handleMcpGeneric(Map.of("X-Api-Key", "test", "X-Role", "user", "X-Profile", "default"), "orders.get", Map.of("orderId", "health"));
+            log.info("✅ MCP: UP - Conexión exitosa");
+        } catch (Exception e) {
+            log.warn("❌ MCP: DOWN - Error: {}", e.getMessage());
+        }
+
+        log.info("Verificación de salud completada.");
     }
 }

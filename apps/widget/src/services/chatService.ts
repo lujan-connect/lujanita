@@ -1,4 +1,3 @@
-import fetchImport from 'node-fetch';
 import { ChatConfig, ChatRequestDTO, ChatResponseDTO } from '../types';
 import { generateCorrelationId } from '../utils/correlationId';
 
@@ -10,24 +9,23 @@ export function createChatService(config: ChatConfig): ChatService {
   const baseUrl = config.endpoint.replace(/\/$/, '');
   return {
     async sendMessage(req: ChatRequestDTO): Promise<ChatResponseDTO> {
-      // Resolver fetch dinámicamente para permitir mock en tests/BDD
-      const f: any = (globalThis as any).fetch || fetchImport;
+      // Usar fetch nativo del navegador
       const correlationId = generateCorrelationId();
-      const res = await f(`${baseUrl}/api/chat`, {
+      const res = await fetch(`${baseUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apiKey': config.apiKey,
-          'role': config.role,
-          'profile': config.profile,
-          'correlationId': correlationId
+          'X-Api-Key': config.apiKey,
+          'X-Role': config.role,
+          'X-Profile': config.profile,
+          'X-Correlation-Id': correlationId
         },
         body: JSON.stringify({ message: req.message, sessionId: req.sessionId })
       });
       if (!res.ok) {
         throw new Error(`ChatServiceError ${res.status}`);
       }
-      const data = await (res as any).json() as ChatResponseDTO;
+      const data = await res.json() as ChatResponseDTO;
       return { ...data, correlationId: data.correlationId || correlationId };
     }
   };
