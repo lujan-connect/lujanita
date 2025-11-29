@@ -15,6 +15,19 @@ export const ChatWidget: React.FC<Props> = ({ config, locale = 'es' }) => {
   const chatServiceRef = useRef(createChatService(config));
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  // Mostrar welcome message al inicializar
+  useEffect(() => {
+    const botName = config.chatbotName || 'Lujanita';
+    const welcome = config.welcomeMessage ? config.welcomeMessage.replace('%s', botName) : `Hola — soy ${botName}, asistente de Expreso Luján de Cuyo. ¿En qué te puedo ayudar?`;
+    const welcomeMsg: ChatMessage = {
+      id: `welcome-${Date.now()}`,
+      role: 'assistant',
+      content: welcome,
+      timestamp: new Date().toISOString()
+    } as any;
+    setMessages(prev => [welcomeMsg, ...prev]);
+  }, [config.chatbotName, config.welcomeMessage]);
+
   const send = async () => {
     if (!input.trim()) return;
     const userMsg: ChatMessage = {

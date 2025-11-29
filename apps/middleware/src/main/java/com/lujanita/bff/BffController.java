@@ -13,8 +13,8 @@ import com.lujanita.bff.ollama.OllamaClientService;
 import com.lujanita.bff.mcp.McpClientService;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import jakarta.annotation.PostConstruct;
 import com.lujanita.bff.config.BffProperties;
+import org.springframework.core.annotation.Order;
 
 @RestController
 @RequestMapping("/api")
@@ -117,7 +117,7 @@ public class BffController {
 
         // Verificar salud de Ollama
         try {
-            ollamaClientService.generate(bffProperties.getOllama().getModel(), "health check");
+            ollamaClientService.validateModelAvailable();
             components.put("ollama", Map.of("status", "up", "model", bffProperties.getOllama().getModel()));
         } catch (Exception e) {
             components.put("ollama", Map.of("status", "down", "error", e.getMessage()));
@@ -154,32 +154,43 @@ public class BffController {
         return ResponseEntity.ok(resp);
     }
 
-    @PostConstruct
-    public void init() {
-        // Lógica de inicialización, si es necesaria
-        log.info("Aplicación iniciada. Verificando salud de componentes...");
-        healthCheck();
-    }
-
     @EventListener(ApplicationReadyEvent.class)
+    @Order(1) // Ensure this runs only once and in the correct order
     public void healthCheck() {
         log.info("Verificando salud de componentes al iniciar la aplicación...");
 
+        Map<String, Object> components = new HashMap<>();
+
         // Verificar salud de Ollama
         try {
-            orchestrator.handleChat(Map.of("X-Api-Key", "test", "X-Role", "user", "X-Profile", "default"), "health check");
-            log.info("✅ Ollama: UP - Conexión exitosa");
+            ollamaClientService.validateModelAvailable();
+            components.put("ollama", Map.of("status", "up", "model", bffProperties.getOllama().getModel()));
         } catch (Exception e) {
-            log.warn("❌ Ollama: DOWN - Error: {}", e.getMessage());
+            components.put("ollama", Map.of("status", "down", "error", e.getMessage()));
         }
 
         // Verificar salud de MCP
         try {
-            orchestrator.handleMcpGeneric(Map.of("X-Api-Key", "test", "X-Role", "user", "X-Profile", "default"), "orders.get", Map.of("orderId", "health"));
-            log.info("✅ MCP: UP - Conexión exitosa");
+            Map<String, String> dummyHeaders = Map.of(
+                "X-Api-Key", bffProperties.getMcp().getTestApiKey(),
+                "X-Role", bffProperties.getMcp().getTestRole(),
+                "X-Profile", bffProperties.getMcp().getTestProfile()
+            );
+            mcpClientService.callMcp("orders.get", Map.of("orderId", "health"), dummyHeaders);
+            components.put("odoo", Map.of("status", "up", "latencyMs", 50));
         } catch (Exception e) {
-            log.warn("❌ MCP: DOWN - Error: {}", e.getMessage());
+            components.put("odoo", Map.of("status", "down", "error", e.getMessage()));
         }
+
+        components.forEach((key, value) -> {
+            Map<String, Object> component = (Map<String, Object>) value;
+            String status = (String) component.get("status");
+            if ("up".equals(status)) {
+                log.info("✅ {}: UP", key);
+            } else {
+                log.warn("❌ {}: DOWN - Error: {}", key, component.get("error"));
+            }
+        });
 
         log.info("Verificación de salud completada.");
     }

@@ -6,6 +6,8 @@ export interface ChatConfig {
   primaryColor?: string;
   backgroundColor?: string;
   logoUrl?: string;
+  chatbotName?: string;
+  welcomeMessage?: string;
 }
 
 export interface ChatMessage {

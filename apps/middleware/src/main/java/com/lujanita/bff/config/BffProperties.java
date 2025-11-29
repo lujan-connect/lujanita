@@ -27,7 +27,13 @@ public class BffProperties {
         private int timeoutMs;
         private boolean enabled = true;
         // Prompt de sistema configurable que se prefija a cada petición al LLM
-        private String systemPrompt = "Eres Lujanita, un asistente conversacional para Odoo de una empresa de logística en Argentina. Responde en castellano y explica las funcionalidades de Odoo en lenguaje natural, adaptando el tono a un usuario profesional pero accesible.";
+        private String systemPrompt;
+        // Directrices para el asistente (se lee desde application.yml)
+        private String assistantGuidelines;
+        // Información corporativa que se puede inyectar en cada prompt (texto libre extraído del sitio)
+        private String corporateName = "";
+        private String corporateWebsite = "";
+        private String corporateInfo = "";
         public String getEndpoint() { return endpoint; }
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
         public String getModel() { return model; }
@@ -38,6 +44,14 @@ public class BffProperties {
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
         public String getSystemPrompt() { return systemPrompt; }
         public void setSystemPrompt(String systemPrompt) { this.systemPrompt = systemPrompt; }
+        public String getAssistantGuidelines() { return assistantGuidelines; }
+        public void setAssistantGuidelines(String assistantGuidelines) { this.assistantGuidelines = assistantGuidelines; }
+        public String getCorporateName() { return corporateName; }
+        public void setCorporateName(String corporateName) { this.corporateName = corporateName; }
+        public String getCorporateWebsite() { return corporateWebsite; }
+        public void setCorporateWebsite(String corporateWebsite) { this.corporateWebsite = corporateWebsite; }
+        public String getCorporateInfo() { return corporateInfo; }
+        public void setCorporateInfo(String corporateInfo) { this.corporateInfo = corporateInfo; }
     }
     public static class Mcp {
         private String endpoint;
@@ -87,4 +101,15 @@ public class BffProperties {
         public int getMaxAge() { return maxAge; }
         public void setMaxAge(int maxAge) { this.maxAge = maxAge; }
     }
+    // Propiedades generales del chatbot (configurables desde application.yml)
+    private String chatbotName;
+    private String welcomeMessage;
+    private java.util.List<String> llmFilterKeywords;
+
+    public String getChatbotName() { return chatbotName; }
+    public void setChatbotName(String chatbotName) { this.chatbotName = chatbotName; }
+    public String getWelcomeMessage() { return welcomeMessage; }
+    public void setWelcomeMessage(String welcomeMessage) { this.welcomeMessage = welcomeMessage; }
+    public java.util.List<String> getLlmFilterKeywords() { return llmFilterKeywords; }
+    public void setLlmFilterKeywords(java.util.List<String> llmFilterKeywords) { this.llmFilterKeywords = llmFilterKeywords; }
 }
