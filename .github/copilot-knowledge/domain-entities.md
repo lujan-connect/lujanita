@@ -1,28 +1,27 @@
 # Domain Model Catalog - SDD Knowledge Base
 
-**Artifact Type**: Entity Schema Reference for AI Code Generation  
-**SDD Phase**: Data Modeling & Implementation  
-**Audience**: AI Agents (Primary), Developers (Reference)
+**Artifact Type**: Catálogo de entidades para generación de código AI  
+**SDD Phase**: Modelado de datos e implementación  
+**Audience**: AI Agents (principal), equipo de desarrollo (referencia)
 
 ---
 
-## Purpose
+## Propósito
 
-This artifact provides a **complete catalog of domain entities** with TypeScript and Python schemas side-by-side. Use this when generating code that involves data models, entity relationships, or type definitions.
+Este artefacto provee un **catálogo completo de entidades de dominio** para el chatbot Lujanita, con esquemas TypeScript (widget) y Java (middleware) lado a lado. Úsalo cuando generes código que involucre modelos de datos, relaciones entre entidades o definiciones de tipos.
 
 ---
 
-## Quick Reference
+## Referencia Rápida
 
-| Entity | TypeScript | Python | Collection | Purpose |
-|--------|------------|--------|------------|---------|
-| User | `packages/domain/src/user.ts` | `apps/api/schemas/user.py` | `users` | User accounts |
-| Company | `packages/domain/src/company.ts` | `apps/api/schemas/company.py` | `companies` | Company profiles |
-| Service | `packages/domain/src/service.ts` | `apps/api/schemas/service.py` | `services` | Service offerings |
-| ServiceSubscription | `packages/domain/src/service-subscription.ts` | `apps/api/schemas/service_subscription.py` | `service_subscriptions` | User subscriptions |
-| ServiceExecution | `packages/domain/src/service-execution.ts` | `apps/api/schemas/service_execution.py` | `service_executions` | Execution records |
-| Invoice | `packages/domain/src/invoice.ts` | `apps/api/schemas/invoice.py` | `invoices` | Billing invoices |
-| Ticket | `packages/domain/src/ticket.ts` | `apps/api/schemas/ticket.py` | `tickets` | Support tickets |
+| Entidad | TypeScript (Widget) | Java (Middleware) | Modelo Odoo | Propósito |
+|---------|---------------------|-------------------|-------------|-----------|
+| Order | `packages/contracts/src/order.ts` | `apps/middleware/.../Order.java` | `sale.order` | Órdenes de venta |
+| Customer | `packages/contracts/src/customer.ts` | `apps/middleware/.../Customer.java` | `res.partner` | Datos de cliente |
+| Product | `packages/contracts/src/product.ts` | `apps/middleware/.../Product.java` | `product.product` | Catálogo de productos |
+| DeliveryOrder | `packages/contracts/src/delivery.ts` | `apps/middleware/.../Delivery.java` | `stock.picking` | Órdenes de entrega |
+| ChatSession | `packages/contracts/src/chat.ts` | `apps/middleware/.../ChatSession.java` | N/A | Sesiones conversacionales |
+| Intent | `packages/contracts/src/intent.ts` | `apps/middleware/.../Intent.java` | N/A | Clasificación de intención |
 
 ---
 

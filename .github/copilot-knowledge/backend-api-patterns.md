@@ -72,7 +72,7 @@ class OrderControllerTest {
 ```
 Ejecutar:
 ```bash
-cd apps/middleware && ./gradlew test --tests *OrderControllerTest
+cd apps/middleware && ./mvnw test --tests *OrderControllerTest
 # Debe fallar porque el endpoint aún no existe
 ```
 
@@ -115,7 +115,7 @@ public class OrderService {
 
 #### 6. Re-ejecutar Tests
 ```bash
-cd apps/middleware && ./gradlew test --tests *OrderControllerTest
+cd apps/middleware && ./mvnw test --tests *OrderControllerTest
 # Debe pasar
 ```
 

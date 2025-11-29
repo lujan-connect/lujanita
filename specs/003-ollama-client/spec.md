@@ -34,6 +34,7 @@ Diseñar la interacción del middleware con el servidor Ollama embebido (modelo 
 
 - Ollama: servidor local de LLM
 - Modelo por defecto: `tinyllama` (o `phi-2` según configuración)
+- Contexto/PROMPT por rol/perfil: parámetros enviados desde clientes (UI/BFF) que definen el prompt del sistema (contexto previo) y ajustes del prompt de usuario según `role` y `profile`.
 
 ## 3. Historias de Usuario y Criterios
 
@@ -58,6 +59,7 @@ Como middleware necesito detectar si el modelo no está disponible y decidir fal
 - FR-LLM-005: Logs estructurados con `correlationId`.
 - FR-LLM-006: Incluir `durationMs` siempre y `promptTokens`/`completionTokens` cuando estén disponibles; si faltan, registrar `metricsMissing=true` en logs.
 - FR-LLM-007: Opciones avanzadas (`top_p`, `frequency_penalty`) fuera de alcance en v1.
+- FR-LLM-008: Aceptar y propagar `systemPrompt` (contexto previo) y `userPromptOverrides` configurables por `role`/`profile`, enviados desde los clientes; el BFF debe inyectarlos en los `messages` como entrada a `ollama.chat`.
 
 ## 5. Criterios de Éxito
 
@@ -112,6 +114,10 @@ Como middleware necesito detectar si el modelo no está disponible y decidir fal
 - Opciones v1:
   - Soportadas: `temperature`, `maxTokens`, `stream` (por defecto `false`).
   - No soportadas: `top_p`, `frequency_penalty`.
+- Contexto/prompt por rol/perfil:
+  - Los clientes (UI/BFF) enviarán `role`, `profile`, `systemPrompt` y `userPromptOverrides`.
+  - El BFF construirá `messages` incluyendo un `system` message con `systemPrompt` y aplicará `userPromptOverrides` antes de llamar a `ollama.chat`.
+  - Registrar en logs el `role` y `profile` usados para auditoría (sin exponer contenido sensible del prompt).
 
 ## 13. Calidad de Especificación
 

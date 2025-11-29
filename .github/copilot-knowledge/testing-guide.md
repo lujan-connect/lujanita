@@ -30,8 +30,8 @@
   - Respetar i18n: validar claves traducidas (usar `t('key')`).
 
 ## Middleware Java (apps/middleware)
-- **BDD**: `./gradlew testBdd` (Cucumber + Spring Boot + RestAssured).
-- **Unit/Integration**: `./gradlew test` (JUnit 5 + Mockito + WireMock).
+- **BDD**: `./mvnw testBdd` (Cucumber + Spring Boot + RestAssured).
+- **Unit/Integration**: `./mvnw test` (JUnit 5 + Mockito + WireMock).
 - **Patrones**:
   - Step definitions en `apps/middleware/src/test/java/.../steps` deben simular MCP server.
   - WireMock para endpoints MCP/Odoo definidos en `packages/contracts/mocks`.
@@ -44,9 +44,9 @@
 
 ## Fases de Ejecución
 1. `cd apps/widget && npm run test:bdd` (esperado: falla inicial).
-2. `cd apps/middleware && ./gradlew testBdd` (esperado: falla inicial).
+2. `cd apps/middleware && ./mvnw testBdd` (esperado: falla inicial).
 3. Implementación mínima → repetir comandos hasta pasar.
-4. `npm run test` y `./gradlew test` para validar unidad/integración.
+4. `npm run test` y `./mvnw test` para validar unidad/integración.
 
 ## Evidencia en Pull Requests
 - Adjuntar salida resumida de comando BDD + unitario.

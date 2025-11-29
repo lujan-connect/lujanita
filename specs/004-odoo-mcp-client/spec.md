@@ -31,7 +31,7 @@ Diseñar la interacción del middleware con el MCP Server de Odoo para consultar
 
 ## 2. Definiciones
 
-- MCP: Model Context Protocol
+- MCP: Model Context Protocol (protocolo estándar de contexto para interacción con herramientas/servicios). En este proyecto se usa el servidor MCP de Odoo (módulo `llm_mcp_server`).
 - Modelos Odoo: `sale.order`, `res.partner`, `product.product`
 
 ## 3. Historias de Usuario y Criterios
@@ -56,11 +56,11 @@ Como middleware necesito listar productos disponibles.
 
 ## 4. Requisitos Funcionales
 
-- FR-MCP-001: Implementar cliente MCP con operaciones `orders.get`, `customers.search`, `products.list`.
+- FR-MCP-001: Implementar cliente MCP con operaciones `orders.get`, `customers.search`, `products.list` siguiendo contratos del servidor MCP de Odoo (`llm_mcp_server`).
 - FR-MCP-002: Validar parámetros y mapear errores MCP a `OD00X`.
 - FR-MCP-003: Logs estructurados con `correlationId` y `mcpOperation`.
 - FR-MCP-004: Tiempos de espera y reintentos configurables.
-- FR-MCP-005: Propagar headers `X-Api-Key`, `X-Role`, `X-Profile` hacia MCP.
+- FR-MCP-005: Propagar headers `X-Api-Key`, `X-Role`, `X-Profile` hacia MCP, y usar `Authorization: Bearer <MCP_TOKEN>` si el servidor lo requiere.
 - FR-MCP-006: Paginación por defecto (`limit=20`, `offset=0`) y `totalCount` en respuestas cuando aplique.
 - FR-MCP-007: `orders.get` incluye `lines` sólo si `includeLines=true`.
 
@@ -83,7 +83,8 @@ Como middleware necesito listar productos disponibles.
 
 ## 8. Dependencias
 
-- `.github/copilot-knowledge/contracts-mcp.md`
+- Servidor MCP de Odoo: módulo `llm_mcp_server` (Odoo 18+)
+- `.github/copilot-knowledge/contracts-mcp.md` (Model Context Protocol)
 - `packages/contracts/mocks/`
 
 ## 9. Riesgos
@@ -100,7 +101,7 @@ Como middleware necesito listar productos disponibles.
 ## 11. [NEEDS CLARIFICATION]
 
 1) Autenticación MCP:
-   - [RESUELTO] Se usará autenticación por token del middleware propagado al MCP (header `X-Api-Key`) sin token adicional en v1. El `role` y `profile` se incluyen como metadatos (`X-Role`, `X-Profile`).
+   - [RESUELTO] Se usará autenticación por token del BFF propagado al MCP mediante headers (`X-Api-Key`, `X-Role`, `X-Profile`) y `Authorization: Bearer <MCP_TOKEN>` si el servidor MCP (`llm_mcp_server`) lo exige.
 2) Límites y paginación:
    - [RESUELTO] Paginación condicional: si `limit` no se especifica, por defecto `limit=20` y `offset=0`. Respuestas incluirán `totalCount` cuando aplique.
 3) Campos opcionales:
@@ -109,8 +110,8 @@ Como middleware necesito listar productos disponibles.
 ## 12. Decisiones de Clarificación
 
 - Autenticación MCP v1:
-  - Headers: `X-Api-Key`, `X-Role`, `X-Profile` propagados desde el frontend→middleware→MCP.
-  - No se requiere token adicional específico de Odoo MCP en v1.
+  - Headers: `X-Api-Key`, `X-Role`, `X-Profile` propagados desde el frontend→BFF→MCP.
+  - `Authorization: Bearer <MCP_TOKEN>` si el servidor MCP (`llm_mcp_server`) está configurado con token.
 - Paginación:
   - Parámetros: `limit` (por defecto 20), `offset` (por defecto 0).
   - Respuesta: `totalCount` incluido para `products.list` y `customers.search`.

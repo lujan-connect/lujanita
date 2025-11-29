@@ -1,30 +1,36 @@
 # Knowledge Base Index
 
-**Spec-Driven Development (SDD) Knowledge Base for TravelCBooster**
+**Spec-Driven Development (SDD) Knowledge Base for Lujanita**
 
-This directory contains structured knowledge artifacts that GitHub Copilot and other AI assistants use during code generation. These documents follow the [GitHub Spec-Driven Development toolkit](https://github.blog/ai-and-ml/generative-ai/spec-driven-development-with-ai-get-started-with-a-new-open-source-toolkit/) conventions.
+Este directorio contiene artefactos de conocimiento estructurado que GitHub Copilot y otros asistentes AI usan durante la generación de código. Estos documentos siguen las convenciones del [GitHub Spec-Driven Development toolkit](https://github.blog/ai-and-ml/generative-ai/spec-driven-development-with-ai-get-started-with-a-new-open-source-toolkit/).
 
 ---
 
-## 📚 Available Knowledge Articles
+## 📚 Artículos de Conocimiento Disponibles
 
-### Backend Development
+### Middleware Java
 
-| Article | Purpose | Use When |
-|---------|---------|----------|
-| **[backend-api-patterns.md](backend-api-patterns.md)** | FastAPI patterns, schemas, routers | Creating API endpoints, Pydantic models |
+| Artículo | Propósito | Usar Cuando |
+|----------|-----------|-------------|
+| **[backend-api-patterns.md](backend-api-patterns.md)** | Patrones Spring Boot, DTOs, cliente MCP, Ollama | Crear endpoints REST, integrar con Odoo MCP, invocar modelo local |
 
-### Data Modeling
+### Modelado de Datos
 
-| Article | Purpose | Use When |
-|---------|---------|----------|
-| **[domain-entities.md](domain-entities.md)** | Entity schemas (TypeScript + Python) | Working with domain models, types, interfaces |
+| Artículo | Propósito | Usar Cuando |
+|----------|-----------|-------------|
+| **[domain-entities.md](domain-entities.md)** | Esquemas de entidades (TypeScript + Java) | Trabajar con modelos de dominio, tipos, contratos MCP |
 
 ### Testing
 
-| Article | Purpose | Use When |
-|---------|---------|----------|
-| **[testing-guide.md](testing-guide.md)** | Test-first patterns (TDD) | Writing tests before implementation |
+| Artículo | Propósito | Usar Cuando |
+|----------|-----------|-------------|
+| **[testing-guide.md](testing-guide.md)** | Patrones test-first (BDD + Unit) | Escribir tests antes de implementar |
+
+### Contratos MCP
+
+| Artículo | Propósito | Usar Cuando |
+|----------|-----------|-------------|
+| **[contracts-mcp.md](contracts-mcp.md)** | Definiciones de contratos MCP con Odoo | Agregar nuevas operaciones MCP, validar payloads |
 
 ---
 
@@ -40,15 +46,16 @@ When generating code, AI assistants read:
 4. **[`/docs/`](../../docs/)** - Reference documentation
    - **[`/docs/diagrams/README.md`](../../docs/diagrams/README.md)** - Architecture diagrams (visual context)
 
-### Usage Pattern
+### Patrón de Uso
 
 ```
-User asks: "Create POST /emails endpoint"
+Usuario solicita: "Crear endpoint GET /orders/{orderId}"
   ↓
-AI reads:
-  1. /specs/001-email-parsing/spec.md (if exists)
-  2. .github/copilot-instructions.md (general context)
-  3. .github/copilot-knowledge/backend-api-patterns.md (specific how-to)
+AI lee:
+  1. /specs/002-order-tracking/spec.md (si existe)
+  2. .github/copilot-instructions.md (contexto general)
+  3. .github/copilot-knowledge/backend-api-patterns.md (cómo hacerlo)
+  4. packages/contracts/ (contrato MCP para orders.get)
   4. .github/copilot-knowledge/domain-entities.md (data models)
   5. .github/copilot-knowledge/testing-guide.md (test-first)
   ↓

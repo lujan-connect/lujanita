@@ -1,4 +1,4 @@
-en q# Git Commit Instructions - TravelCBooster
+# Git Commit Instructions - Lujanita
 
 ## Conventional Commits Format
 
@@ -16,7 +16,7 @@ All commits in this repository MUST follow the [Conventional Commits](https://ww
 
 ### Structure Breakdown
 
-1. **[JIRA-ID]**: Jira ticket identifier (e.g., TRAV-123) - **MANDATORY**
+1. **[JIRA-ID]**: Jira ticket identifier (e.g., LUJ-123) - **MANDATORY**
 2. **type**: Type of change - **MANDATORY**
 3. **(scope)**: Area affected - **OPTIONAL**
 4. **subject**: Short description (imperative mood) - **MANDATORY**
@@ -33,35 +33,35 @@ The Jira ticket ID is **automatically extracted from your branch name**:
 
 ```bash
 # Feature branches
-feature/TRAV-123-short-description
-feature/TRAV-456
+feature/LUJ-123-short-description
+feature/LUJ-456
 
 # Bugfix branches
-bugfix/TRAV-789-fix-description
-fix/TRAV-101
+bugfix/LUJ-789-fix-description
+fix/LUJ-101
 
 # Hotfix branches
-hotfix/TRAV-202-critical-fix
+hotfix/LUJ-202-critical-fix
 
 # Chore branches
-chore/TRAV-303-update-deps
+chore/LUJ-303-update-deps
 ```
 
 ### Extraction Rules
 
-- Pattern: `(TRAV-\d+)` anywhere in branch name
-- Case insensitive (TRAV-123, trav-123 both work)
+- Pattern: `(LUJ-\d+)` anywhere in branch name
+- Case insensitive (LUJ-123, trav-123 both work)
 - First match is used if multiple IDs exist
-- Format: Always uppercase in commit message (TRAV-XXX)
+- Format: Always uppercase in commit message (LUJ-XXX)
 
 ### Examples
 
 | Branch Name | Extracted ID | Commit Starts With |
 |-------------|--------------|-------------------|
-| `feature/TRAV-1` | TRAV-1 | `[TRAV-1] feat:` |
-| `feature/TRAV-123-automatic-responses` | TRAV-123 | `[TRAV-123] feat:` |
-| `bugfix/TRAV-456` | TRAV-456 | `[TRAV-456] fix:` |
-| `hotfix/trav-789-critical` | TRAV-789 | `[TRAV-789] fix:` |
+| `feature/LUJ-1` | LUJ-1 | `[LUJ-1] feat:` |
+| `feature/LUJ-123-automatic-responses` | LUJ-123 | `[LUJ-123] feat:` |
+| `bugfix/LUJ-456` | LUJ-456 | `[LUJ-456] fix:` |
+| `hotfix/trav-789-critical` | LUJ-789 | `[LUJ-789] fix:` |
 | `main` or `devel` | *(none)* | `feat:` (no ID) |
 
 ---
@@ -72,22 +72,22 @@ chore/TRAV-303-update-deps
 
 | Type | Description | When to Use | Example |
 |------|-------------|-------------|---------|
-| **feat** | New feature | Adding new functionality | `[TRAV-1] feat(api): add email parsing endpoint` |
-| **fix** | Bug fix | Fixing a defect | `[TRAV-2] fix(services): resolve correlation ID issue` |
-| **docs** | Documentation | Only documentation changes | `[TRAV-3] docs(specs): update spec.md with edge cases` |
-| **test** | Tests | Adding or updating tests | `[TRAV-4] test(api): add contract tests for EmailMessage` |
-| **refactor** | Code refactoring | Code change that neither fixes bug nor adds feature | `[TRAV-5] refactor(packages): extract email-processor to package` |
-| **chore** | Maintenance | Build process, dependencies, tooling | `[TRAV-6] chore(deps): upgrade FastAPI to 0.116.1` |
+| **feat** | New feature | Adding new functionality | `[LUJ-1] feat(api): add email parsing endpoint` |
+| **fix** | Bug fix | Fixing a defect | `[LUJ-2] fix(services): resolve correlation ID issue` |
+| **docs** | Documentation | Only documentation changes | `[LUJ-3] docs(specs): update spec.md with edge cases` |
+| **test** | Tests | Adding or updating tests | `[LUJ-4] test(api): add contract tests for EmailMessage` |
+| **refactor** | Code refactoring | Code change that neither fixes bug nor adds feature | `[LUJ-5] refactor(packages): extract email-processor to package` |
+| **chore** | Maintenance | Build process, dependencies, tooling | `[LUJ-6] chore(deps): upgrade FastAPI to 0.116.1` |
 
 ### Secondary Types (Less Common)
 
 | Type | Description | Example |
 |------|-------------|---------|
-| **style** | Formatting, missing semicolons, etc. (no code change) | `[TRAV-7] style(api): format with black and prettier` |
-| **perf** | Performance improvements | `[TRAV-8] perf(scrapper): optimize selector caching` |
-| **build** | Build system or external dependencies | `[TRAV-9] build(turbo): update turborepo configuration` |
-| **ci** | CI/CD configuration files and scripts | `[TRAV-10] ci(github): add PR validation workflow` |
-| **revert** | Reverts a previous commit | `[TRAV-11] revert: revert "feat(api): add endpoint"` |
+| **style** | Formatting, missing semicolons, etc. (no code change) | `[LUJ-7] style(api): format with black and prettier` |
+| **perf** | Performance improvements | `[LUJ-8] perf(scrapper): optimize selector caching` |
+| **build** | Build system or external dependencies | `[LUJ-9] build(turbo): update turborepo configuration` |
+| **ci** | CI/CD configuration files and scripts | `[LUJ-10] ci(github): add PR validation workflow` |
+| **revert** | Reverts a previous commit | `[LUJ-11] revert: revert "feat(api): add endpoint"` |
 
 ---
 
@@ -123,8 +123,8 @@ The scope specifies the area of the codebase affected. Use these standard scopes
 Use comma-separated list when affecting multiple areas:
 
 ```
-[TRAV-15] feat(api,services): add webhook validation
-[TRAV-16] refactor(domain,dashboard): update ServiceSubscription interface
+[LUJ-15] feat(api,services): add webhook validation
+[LUJ-16] refactor(domain,dashboard): update ServiceSubscription interface
 ```
 
 ---
@@ -140,21 +140,21 @@ Use comma-separated list when affecting multiple areas:
 ### ✅ Good Examples
 
 ```
-[TRAV-1] feat(api): add email parsing endpoint
-[TRAV-2] fix(services): resolve correlation ID propagation
-[TRAV-3] docs(specs): update FR-001 with edge cases
-[TRAV-4] test(api): add contract tests for EmailMessage schema
-[TRAV-5] refactor(packages): extract email-processor to package
+[LUJ-1] feat(api): add email parsing endpoint
+[LUJ-2] fix(services): resolve correlation ID propagation
+[LUJ-3] docs(specs): update FR-001 with edge cases
+[LUJ-4] test(api): add contract tests for EmailMessage schema
+[LUJ-5] refactor(packages): extract email-processor to package
 ```
 
 ### ❌ Bad Examples
 
 ```
-[TRAV-1] Added email parser                    # Wrong: past tense, no type/scope
-[TRAV-2] fix(services): Fixes the bug.         # Wrong: capital letter, period
-[TRAV-3] feat: stuff                           # Wrong: vague subject
-[TRAV-4] Updated docs                          # Wrong: no type, no scope
-TRAV-5 feat(api): add feature                  # Wrong: missing brackets []
+[LUJ-1] Added email parser                    # Wrong: past tense, no type/scope
+[LUJ-2] fix(services): Fixes the bug.         # Wrong: capital letter, period
+[LUJ-3] feat: stuff                           # Wrong: vague subject
+[LUJ-4] Updated docs                          # Wrong: no type, no scope
+LUJ-5 feat(api): add feature                  # Wrong: missing brackets []
 ```
 
 ---
@@ -176,7 +176,7 @@ The body is **optional** but recommended for:
 ### Example with Body
 
 ```
-[TRAV-1] feat(api): add email parsing endpoint
+[LUJ-1] feat(api): add email parsing endpoint
 
 Add POST /emails/parse endpoint to extract metadata from provider emails.
 
@@ -199,7 +199,7 @@ Footers provide metadata about the commit:
 Use `BREAKING CHANGE:` footer for backwards-incompatible changes:
 
 ```
-[TRAV-10] feat(api): update ServiceSubscription schema
+[LUJ-10] feat(api): update ServiceSubscription schema
 
 BREAKING CHANGE: removed `serviceOptionKeys` field, replaced with `selectedOption`
 
@@ -211,7 +211,7 @@ Migration guide available in /docs/MIGRATIONS.md
 Link to related issues or PRs:
 
 ```
-[TRAV-5] fix(api): resolve authentication issue
+[LUJ-5] fix(api): resolve authentication issue
 
 Fixes #123
 Closes #456
@@ -223,7 +223,7 @@ Refs #789
 Credit multiple contributors:
 
 ```
-[TRAV-8] feat(services): add AI classifier integration
+[LUJ-8] feat(services): add AI classifier integration
 
 Co-authored-by: Jane Doe <jane@example.com>
 Co-authored-by: John Smith <john@example.com>
@@ -236,13 +236,13 @@ Co-authored-by: John Smith <john@example.com>
 ### Example 1: Simple Feature
 
 ```
-[TRAV-1] feat(api): add email parsing endpoint
+[LUJ-1] feat(api): add email parsing endpoint
 ```
 
 ### Example 2: Bug Fix with Context
 
 ```
-[TRAV-2] fix(services): resolve correlation ID propagation
+[LUJ-2] fix(services): resolve correlation ID propagation
 
 Correlation IDs were not being passed between API and Services,
 breaking distributed tracing. Now explicitly passed via headers.
@@ -253,7 +253,7 @@ Fixes #234
 ### Example 3: Breaking Change
 
 ```
-[TRAV-10] feat(domain): update ServiceSubscription interface
+[LUJ-10] feat(domain): update ServiceSubscription interface
 
 Remove deprecated `serviceOptionKeys` array, replace with single
 `selectedOption` field per subscription model changes.
@@ -267,7 +267,7 @@ Migration: packages/domain/MIGRATIONS.md
 ### Example 4: Multi-Scope Refactor
 
 ```
-[TRAV-15] refactor(api,services,packages): extract email-processor package
+[LUJ-15] refactor(api,services,packages): extract email-processor package
 
 Extract email processing logic from apps/api and apps/services
 into reusable packages/email-processor package.
@@ -283,7 +283,7 @@ Refs #567
 ### Example 5: Test-First Implementation
 
 ```
-[TRAV-20] test(api): add contract tests for EmailMessage schema
+[LUJ-20] test(api): add contract tests for EmailMessage schema
 
 Implements Phase 2 test-first requirement from tasks.md.
 Tests verify EmailMessage schema validation for:
@@ -299,7 +299,7 @@ Implementation will follow in next commit.
 ### Example 6: Documentation Update
 
 ```
-[TRAV-25] docs(specs): complete plan.md for automatic responses
+[LUJ-25] docs(specs): complete plan.md for automatic responses
 
 Add technical architecture decisions for email processing:
 - LLM provider selection (Bedrock vs OpenAI)
@@ -314,42 +314,42 @@ Completes Phase 0 prerequisites per Constitution.
 
 ## Branch-Specific Commit Conventions
 
-### Feature Branches (`feature/TRAV-XXX`)
+### Feature Branches (`feature/LUJ-XXX`)
 
 Primary types: `feat`, `test`, `docs`, `refactor`
 
 ```
-[TRAV-1] feat(api): add email parsing endpoint
-[TRAV-1] test(api): add tests for email parser
-[TRAV-1] docs(specs): update spec.md with implementation notes
-[TRAV-1] refactor(api): extract parser logic to helper
+[LUJ-1] feat(api): add email parsing endpoint
+[LUJ-1] test(api): add tests for email parser
+[LUJ-1] docs(specs): update spec.md with implementation notes
+[LUJ-1] refactor(api): extract parser logic to helper
 ```
 
-### Bugfix Branches (`bugfix/TRAV-XXX` or `fix/TRAV-XXX`)
+### Bugfix Branches (`bugfix/LUJ-XXX` or `fix/LUJ-XXX`)
 
 Primary types: `fix`, `test`
 
 ```
-[TRAV-50] fix(api): resolve authentication timeout
-[TRAV-50] test(api): add regression test for timeout issue
+[LUJ-50] fix(api): resolve authentication timeout
+[LUJ-50] test(api): add regression test for timeout issue
 ```
 
-### Hotfix Branches (`hotfix/TRAV-XXX`)
+### Hotfix Branches (`hotfix/LUJ-XXX`)
 
 Primary types: `fix` (urgent production fixes)
 
 ```
-[TRAV-99] fix(api): patch critical security vulnerability
+[LUJ-99] fix(api): patch critical security vulnerability
 ```
 
-### Chore Branches (`chore/TRAV-XXX`)
+### Chore Branches (`chore/LUJ-XXX`)
 
 Primary types: `chore`, `build`, `ci`, `deps`
 
 ```
-[TRAV-75] chore(deps): upgrade all dependencies
-[TRAV-76] build(turbo): optimize build cache configuration
-[TRAV-77] ci(github): add automated deployment workflow
+[LUJ-75] chore(deps): upgrade all dependencies
+[LUJ-76] build(turbo): optimize build cache configuration
+[LUJ-77] ci(github): add automated deployment workflow
 ```
 
 ---
@@ -377,9 +377,9 @@ docs(readme): update setup instructions
 If a commit genuinely affects multiple tickets:
 
 ```
-[TRAV-1,TRAV-2] feat(api,services): integrate email and AI services
+[LUJ-1,LUJ-2] feat(api,services): integrate email and AI services
 
-Links email parsing (TRAV-1) with AI classification (TRAV-2)
+Links email parsing (LUJ-1) with AI classification (LUJ-2)
 for end-to-end automatic response processing.
 ```
 
@@ -390,7 +390,7 @@ for end-to-end automatic response processing.
 When reverting a previous commit:
 
 ```
-[TRAV-30] revert: revert "[TRAV-28] feat(api): add experimental endpoint"
+[LUJ-30] revert: revert "[LUJ-28] feat(api): add experimental endpoint"
 
 This reverts commit abc123def456.
 
@@ -410,8 +410,8 @@ When Copilot or your IDE AI generates a commit message, it MUST:
 
 1. **Extract Jira ID from current branch name**
    - Read current branch: `git symbolic-ref --short HEAD`
-   - Extract pattern: `TRAV-\d+` (case insensitive)
-   - Convert to uppercase: `TRAV-123`
+   - Extract pattern: `LUJ-\d+` (case insensitive)
+   - Convert to uppercase: `LUJ-123`
 
 2. **Analyze staged changes** to determine:
    - Type (feat, fix, docs, test, refactor, chore, etc.)
@@ -425,17 +425,17 @@ When Copilot or your IDE AI generates a commit message, it MUST:
 ### Example AI Generation Flow
 
 ```
-Current branch: feature/TRAV-123-email-parsing
+Current branch: feature/LUJ-123-email-parsing
 Staged files: apps/api/app/routers/emails.py, apps/api/tests/test_emails.py
 
 AI Analysis:
-- Jira ID: TRAV-123
+- Jira ID: LUJ-123
 - Type: feat (new functionality)
 - Scope: api (changes in apps/api)
 - Subject: add email parsing endpoint
 
 Generated message:
-[TRAV-123] feat(api): add email parsing endpoint
+[LUJ-123] feat(api): add email parsing endpoint
 ```
 
 ### Optional: Validation with commitlint
@@ -477,9 +477,9 @@ Copilot will automatically generate commit messages following this format when y
 3. When staging files and committing, Copilot will suggest messages in the correct format
 
 **What Copilot will do**:
-- Read current branch name to extract `TRAV-XXX`
+- Read current branch name to extract `LUJ-XXX`
 - Analyze staged changes to determine type and scope
-- Generate message: `[TRAV-XXX] type(scope): subject`
+- Generate message: `[LUJ-XXX] type(scope): subject`
 
 ### JetBrains AI Assistant (IntelliJ, WebStorm, PyCharm)
 
@@ -492,7 +492,7 @@ JetBrains AI Assistant can generate commit messages following these conventions.
 
 **Alternatively, use manual template**:
 ```
-[TRAV-XXX] type(scope): subject
+[LUJ-XXX] type(scope): subject
 
 Body with detailed explanation
 
@@ -518,7 +518,7 @@ If you prefer CLI, add to `~/.gitconfig`:
   # Commit with Jira ID from branch
   cj = "!f() { \
     BRANCH=$(git symbolic-ref --short HEAD); \
-    JIRA=$(echo $BRANCH | grep -oiE 'TRAV-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'); \
+    JIRA=$(echo $BRANCH | grep -oiE 'LUJ-[0-9]+' | head -1 | tr '[:lower:]' '[:upper:]'); \
     if [ -n \"$JIRA\" ]; then \
       git commit -m \"[$JIRA] $1\"; \
     else \
@@ -530,7 +530,7 @@ If you prefer CLI, add to `~/.gitconfig`:
 Usage:
 ```bash
 git cj "feat(api): add email parsing endpoint"
-# Commits: [TRAV-123] feat(api): add email parsing endpoint
+# Commits: [LUJ-123] feat(api): add email parsing endpoint
 ```
 
 ---
@@ -564,7 +564,7 @@ Rules:   - Subject: imperative, lowercase, no period, ≤72 chars
          - Body: optional, wrap at 72 chars, explain why
          - Footer: BREAKING CHANGE, Fixes #, Refs #, Co-authored-by
 
-Example: [TRAV-1] feat(api): add email parsing endpoint
+Example: [LUJ-1] feat(api): add email parsing endpoint
 ```
 
 ---
@@ -573,11 +573,11 @@ Example: [TRAV-1] feat(api): add email parsing endpoint
 
 | ❌ Wrong | ✅ Correct | Reason |
 |---------|----------|--------|
-| `TRAV-1 feat: add feature` | `[TRAV-1] feat(api): add feature` | Missing brackets and scope |
-| `[TRAV-1] Added feature` | `[TRAV-1] feat(api): add feature` | Missing type, past tense |
-| `[TRAV-1] feat(api): Add feature.` | `[TRAV-1] feat(api): add feature` | Capital letter, period |
-| `[trav-1] feat: stuff` | `[TRAV-1] feat(api): add specific feature` | Lowercase ID, vague |
-| `[TRAV-1] feat: did things` | `[TRAV-1] feat(api): add email parser` | No scope, vague |
+| `LUJ-1 feat: add feature` | `[LUJ-1] feat(api): add feature` | Missing brackets and scope |
+| `[LUJ-1] Added feature` | `[LUJ-1] feat(api): add feature` | Missing type, past tense |
+| `[LUJ-1] feat(api): Add feature.` | `[LUJ-1] feat(api): add feature` | Capital letter, period |
+| `[trav-1] feat: stuff` | `[LUJ-1] feat(api): add specific feature` | Lowercase ID, vague |
+| `[LUJ-1] feat: did things` | `[LUJ-1] feat(api): add email parser` | No scope, vague |
 | Multi-line subject | Subject on one line only | Subject must be single line |
 
 ---
@@ -600,7 +600,7 @@ A: No, keep commits professional and parseable by tools.
 A: Git auto-generates merge commit messages. You can edit to add JIRA ID if needed.
 
 **Q: How do I reference multiple Jira tickets?**  
-A: Use comma-separated: `[TRAV-1,TRAV-2]` or reference others in body/footer.
+A: Use comma-separated: `[LUJ-1,LUJ-2]` or reference others in body/footer.
 
 **Q: What if I'm working on `main` without a feature branch?**  
 A: Use conventional commits without JIRA ID, but this should be rare.
@@ -615,14 +615,14 @@ When asked to generate a commit message for TravelCBooster, follow this algorith
 
 ```javascript
 // Pseudo-code for AI to follow
-const branchName = getCurrentBranch(); // e.g., "feature/TRAV-123-email-parser"
-const jiraIdMatch = branchName.match(/TRAV-\d+/i);
+const branchName = getCurrentBranch(); // e.g., "feature/LUJ-123-email-parser"
+const jiraIdMatch = branchName.match(/LUJ-\d+/i);
 const jiraId = jiraIdMatch ? jiraIdMatch[0].toUpperCase() : null;
 
 // Examples:
-// "feature/TRAV-1" → "TRAV-1"
-// "bugfix/TRAV-456-fix-bug" → "TRAV-456"
-// "hotfix/trav-789" → "TRAV-789"
+// "feature/LUJ-1" → "LUJ-1"
+// "bugfix/LUJ-456-fix-bug" → "LUJ-456"
+// "hotfix/trav-789" → "LUJ-789"
 // "main" → null
 ```
 
@@ -675,52 +675,52 @@ if (isComplexChange(stagedFiles)) {
 
 #### Example 1: Feature in API
 ```
-Branch: feature/TRAV-1-email-parser
+Branch: feature/LUJ-1-email-parser
 Files: apps/api/app/routers/emails.py, apps/api/tests/test_emails.py
 Changes: New endpoint for email parsing
 
 Generated:
-[TRAV-1] feat(api): add email parsing endpoint
+[LUJ-1] feat(api): add email parsing endpoint
 ```
 
 #### Example 2: Bug Fix in Services
 ```
-Branch: bugfix/TRAV-50-auth-timeout
+Branch: bugfix/LUJ-50-auth-timeout
 Files: apps/services/app/auth.py
 Changes: Fix timeout handling
 
 Generated:
-[TRAV-50] fix(services): resolve authentication timeout issue
+[LUJ-50] fix(services): resolve authentication timeout issue
 ```
 
 #### Example 3: Tests Only
 ```
-Branch: feature/TRAV-20-email-tests
+Branch: feature/LUJ-20-email-tests
 Files: apps/api/tests/test_emails.py
 Changes: Add contract tests
 
 Generated:
-[TRAV-20] test(api): add contract tests for EmailMessage schema
+[LUJ-20] test(api): add contract tests for EmailMessage schema
 ```
 
 #### Example 4: Documentation
 ```
-Branch: chore/TRAV-75-update-docs
+Branch: chore/LUJ-75-update-docs
 Files: docs/API_STYLE_GUIDE.md, README.md
 Changes: Update API documentation
 
 Generated:
-[TRAV-75] docs(api): update API style guide with new patterns
+[LUJ-75] docs(api): update API style guide with new patterns
 ```
 
 #### Example 5: Multiple Scopes
 ```
-Branch: feature/TRAV-15-integration
+Branch: feature/LUJ-15-integration
 Files: apps/api/app/routers/webhooks.py, apps/services/app/handlers.py
 Changes: Integrate webhook handling
 
 Generated:
-[TRAV-15] feat(api,services): add webhook validation and handling
+[LUJ-15] feat(api,services): add webhook validation and handling
 ```
 
 ### Step 5: Validation Rules

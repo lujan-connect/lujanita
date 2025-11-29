@@ -10,10 +10,12 @@ Este proyecto sigue el [toolkit de Spec-Driven Development de GitHub](https://gi
 
 Plataforma de automatización conversacional para Lujan de Cuyo Express:
 - **Widget conversacional**: React + Vite (`apps/widget/`)
-- **Middleware**: Java 21 + Spring Boot (`apps/middleware/`) actuando como cliente MCP
+- **BFF (Backend for Frontend)**: Java 21 + Spring Boot (`apps/middleware/`) que orquesta interacción con LLM (Ollama) y MCP (Odoo)
 - **Backend fuente**: Odoo (`platform/odoo/`) con servidor MCP oficial
 - **Contratos MCP**: `packages/contracts/`
 - **Infraestructura**: Google Cloud Run + Cloud Build
+
+> Nota: MCP se refiere a "Model Context Protocol" (no "Model Content Protocol"). Usar siempre esta denominación para evitar confusiones.
 
 ---
 
@@ -41,7 +43,7 @@ Plataforma de automatización conversacional para Lujan de Cuyo Express:
 1. Usa `.github/prompts/speckit.gherkin.prompt.md` para generar feature files.
 2. Cada User Story debe producir un feature file Gherkin con ubicación según capa:
    - Widget React → `apps/widget/features/`
-   - Middleware Java → `apps/middleware/features/`
+   - BFF (Java) → `apps/middleware/features/`
    - Orquestación u otros servicios → `apps/services/features/`
 3. Cada feature file DEBE incluir:
    - Tags Jira (`@JIRA:LUJ-XXX`)
@@ -86,9 +88,9 @@ Lee en este orden:
 cd apps/widget && npm run test:bdd  # DEBE FALLAR - steps undefined
 # Implementar steps en apps/widget/steps/*_steps.ts con Testing Library
 
-# Middleware (Java + Cucumber + JUnit)
-cd apps/middleware && ./gradlew testBdd  # DEBE FALLAR - steps undefined
-# Implementar steps en apps/middleware/src/test/java/.../*Steps.java usando RestAssured/MCP client
+# BFF (Java + Cucumber + JUnit)
+cd apps/middleware && mvn test -Dcucumber.filter.tags="@bdd"  # DEBE FALLAR - steps undefined
+# Implementar steps en apps/middleware/src/test/java/.../*Steps.java usando RestAssured/Ollama/MCP client
 ```
 
 **B. Implementar Código Mínimo**
@@ -97,15 +99,15 @@ cd apps/middleware && ./gradlew testBdd  # DEBE FALLAR - steps undefined
 # Widget
 cd apps/widget && npm run test:unit  # Vitest + Testing Library
 
-# Middleware
-cd apps/middleware && ./gradlew test  # JUnit + WireMock para Odoo/MCP
+# BFF
+cd apps/middleware && mvn test  # JUnit + WireMock para Odoo/MCP + Ollama
 ```
 
 **C. Verificar que Tests Pasen**
 
 ```bash
 cd apps/widget && npm run test:bdd && npm run test
-cd apps/middleware && ./gradlew testBdd && ./gradlew test
+cd apps/middleware && mvn test -Dcucumber.filter.tags="@bdd" && mvn test
 ```
 
 **D. Refactorizar y Commitear**
@@ -130,11 +132,11 @@ git commit -m "feat(LUJ-XXX): Implementar [feature] con tests BDD"
 | Artículo | Cuándo Leer |
 |---------|-------------|
 | **widget-patterns.md** | Componentes React, i18n, hooks de chat |
-| **middleware-patterns.md** | Integración MCP, Spring Boot, clientes HTTP |
+| **middleware-patterns.md** | Integración BFF↔MCP↔Ollama, Spring Boot, clientes HTTP |
 | **testing-guide.md** | Estrategia de pruebas BDD/Unitarias | 
-| **contracts-mcp.md** | Contratos MCP entre middleware y Odoo |
+| **contracts-mcp.md** | Contratos MCP (Model Context Protocol) entre BFF y Odoo |
 
-**Uso**: referencia artículos específicos en prompts, por ejemplo: `"Implementar step siguiendo middleware-patterns.md"`.
+**Uso**: referencia artículos específicos en prompts, por ejemplo: "Implementar step siguiendo middleware-patterns.md".
 
 ---
 
@@ -143,7 +145,7 @@ git commit -m "feat(LUJ-XXX): Implementar [feature] con tests BDD"
 ```
 apps/
   widget/      # Widget React + Vite (puerto 4173)
-  middleware/  # Java Spring Boot + Cucumber (puerto 9000)
+  middleware/  # BFF Java Spring Boot + Cucumber (puerto 9000)
   services/    # Orquestaciones adicionales
 
 packages/
@@ -157,13 +159,13 @@ platform/
 ### Convenciones de Rutas
 
 ```
-¿Es compartido entre widget y middleware?
+¿Es compartido entre widget y BFF?
 ├─ SÍ → packages/
 │  ├─ Contratos MCP → packages/contracts/
 │  └─ Componentes UI → packages/ui/
 └─ NO → apps/
    ├─ Conversación UI → apps/widget/
-   ├─ Integración MCP → apps/middleware/
+   ├─ BFF/API REST → apps/middleware/
 ```
 
 ---
@@ -177,9 +179,9 @@ platform/
 - Pruebas con Vitest + Testing Library
 - Datos mockeados deben ir en `apps/widget/mocks/`
 
-### Spring Boot Middleware (Java)
-- Java 21, Gradle
-- Configuración MCP client documentada en `packages/contracts`
+### BFF Java (Spring Boot)
+- Java 21, Maven
+- Orquestación BFF ↔ Ollama (ollama4j) ↔ MCP Odoo
 - Pruebas con JUnit 5 + Mockito + WireMock
 - Métricas y logs estructurados (Micrometer + JSON)
 
@@ -193,7 +195,7 @@ platform/
     ┌──────────┐
     │   E2E    │  Escenarios críticos de conversación
     ├──────────┤
-    │ Integr.  │  Contratos MCP y llamadas Odoo
+    │ Integr.  │  Contratos MCP y llamadas Odoo/LLM
     ├──────────┤
     │   Unit   │  Hooks, servicios Java, reducers
     └──────────┘
@@ -204,8 +206,8 @@ platform/
 ```bash
 cd apps/widget && npm run test        # Unit
 cd apps/widget && npm run test:bdd    # BDD
-cd apps/middleware && ./gradlew test  # Unit/Integration
-cd apps/middleware && ./gradlew testBdd  # BDD
+cd apps/middleware && mvn test        # Unit/Integration
+cd apps/middleware && mvn testBdd     # BDD
 ```
 
 ### Reglas
@@ -217,9 +219,9 @@ cd apps/middleware && ./gradlew testBdd  # BDD
 
 ## 🔍 Observabilidad
 
-- Logs estructurados con `correlationId`, `odooModel`, `mcpOperation`
-- Errores deben incluir códigos (`OD00X`, `MW00X`, `UI00X`)
-- Métricas clave: latencia MCP, tasa de respuestas Odoo, satisfacción del usuario
+- Logs estructurados con `correlationId`, `llmOperation`, `mcpOperation`
+- Errores deben incluir códigos (`OD00X`, `LLM00X`, `MW00X`, `UI00X`)
+- Métricas clave: latencia MCP/LLM, tasa de respuestas Odoo, satisfacción del usuario
 
 ---
 
@@ -243,7 +245,7 @@ cd apps/middleware && ./gradlew testBdd  # BDD
 
 ### Nueva Feature
 1. Crear `/specs/NNN-feature/` (spec, plan, data-model, tasks)
-2. Generar feature files Gherkin (widget/middleware)
+2. Generar feature files Gherkin (widget/BFF)
 3. Tests que fallen
 4. Implementar lo mínimo para pasar
 5. Actualizar documentación
@@ -262,7 +264,7 @@ cd apps/middleware && ./gradlew testBdd  # BDD
 2. Lee base de conocimiento relevante
 3. Genera tests BDD/Unit que fallen
 4. Implementa siguiendo patrones
-5. Sugerir comandos de validación (`npm run test`, `./gradlew test`, etc.)
+5. Sugerir comandos de validación (`npm run test`, `mvn test`, etc.)
 
 ---
 
@@ -271,11 +273,11 @@ cd apps/middleware && ./gradlew testBdd  # BDD
 | Tarea | Comando |
 |------|---------|
 | Configurar widget | `cd apps/widget && npm install` |
-| Configurar middleware | `cd apps/middleware && ./gradlew clean build` |
+| Configurar BFF | `cd apps/middleware && mvn clean build` |
 | Ejecutar tests widget | `npm run test` |
-| Ejecutar tests middleware | `./gradlew test` |
+| Ejecutar tests BFF | `mvn test` |
 | Ejecutar BDD widget | `npm run test:bdd` |
-| Ejecutar BDD middleware | `./gradlew testBdd` |
+| Ejecutar BDD BFF | `mvn testBdd` |
 
 ---
 
