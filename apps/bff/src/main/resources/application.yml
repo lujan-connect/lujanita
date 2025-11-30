@@ -11,7 +11,7 @@ spring:
       base-url: http://localhost:11434
       chat:
         options:
-          model: tinyllama
+          model: mistral
           temperature: 0.0
           num_predict: 512
 
@@ -44,7 +44,7 @@ bff:
     - explicaciones de cómo se generó
   ollama:
     endpoint: http://localhost:11434/api/generate
-    model: tinyllama
+    model: mistral
     timeoutMs: 10000
     enabled: true
     temperature: 0.0
