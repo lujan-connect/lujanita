@@ -3,7 +3,7 @@ package com.lujanita.bff.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.lujanita.bff.ollama.OllamaClientService;
-import com.lujanita.bff.mcp.McpClientService;
+import com.lujanita.bff.mcp.McpClientWebClientService;
 import com.lujanita.bff.model.dto.McpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ public class BffOrchestratorService {
     @Autowired
     private OllamaClientService ollamaClientService;
     @Autowired
-    private McpClientService mcpClientService;
+    private McpClientWebClientService mcpClientWebClientService;
     @Autowired
     private BffProperties bffProperties;
 
@@ -97,7 +97,8 @@ public class BffOrchestratorService {
             error.setMessage("Falta apiKey");
             return error;
         }
-        return mcpClientService.callMcp(method, params, headers);
+        // Usar el nuevo cliente WebClient (modo bloqueante para compatibilidad)
+        return mcpClientWebClientService.callMcp(method, params, headers).block();
     }
 
     // Filtra líneas que contengan palabras clave (case-insensitive)
@@ -147,4 +148,9 @@ public class BffOrchestratorService {
         }
         return out;
     }
+
+    // Setters para test
+    public void setOllamaClientService(OllamaClientService o) { this.ollamaClientService = o; }
+    public void setMcpClientWebClientService(McpClientWebClientService m) { this.mcpClientWebClientService = m; }
+    public void setBffProperties(BffProperties b) { this.bffProperties = b; }
 }
