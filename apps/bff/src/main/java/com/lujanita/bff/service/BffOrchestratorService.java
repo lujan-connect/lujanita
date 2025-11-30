@@ -1,4 +1,4 @@
-package com.lujanita.bff;
+package com.lujanita.bff.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;

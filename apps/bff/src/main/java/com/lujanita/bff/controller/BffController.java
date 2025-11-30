@@ -1,5 +1,6 @@
-package com.lujanita.bff;
+package com.lujanita.bff.controller;
 
+import com.lujanita.bff.service.BffOrchestratorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
