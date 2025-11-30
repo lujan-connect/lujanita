@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.lujanita.bff.prompt.PromptConfigService;
 
 @Service
 public class OllamaClientService {
@@ -31,14 +32,17 @@ public class OllamaClientService {
     @Autowired
     private OllamaChatClient ollamaChatClient;
 
-    public String generate(String model, String prompt) {
+    @Autowired
+    private PromptConfigService promptConfigService;
+
+    public String generate(String model, String prompt, String role, String profile) {
         String endpoint = bffProperties.getOllama().getEndpoint();
         String modelName = bffProperties.getOllama().getModel();
         log.info("[Ollama] Usando modelo: {} (endpoint: {})", modelName, endpoint);
 
-        // Unir contexto y directrices en un solo mensaje system
-        String systemPrompt = bffProperties.getOllama().getSystemPrompt();
-        String assistantGuidelines = bffProperties.getOllama().getAssistantGuidelines();
+        // Obtener prompts dinámicos según rol/perfil
+        String systemPrompt = promptConfigService.getSystemPrompt(role, profile);
+        String assistantGuidelines = promptConfigService.getAssistantGuidelines(role, profile);
         String botName = bffProperties.getChatbotName();
         String welcomeTemplate = bffProperties != null ? bffProperties.getWelcomeMessage() : "";
         String welcomeRendered = "";

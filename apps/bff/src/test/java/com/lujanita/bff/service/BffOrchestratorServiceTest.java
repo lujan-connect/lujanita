@@ -66,7 +66,7 @@ class BffOrchestratorServiceTest {
         Map<String, String> headers = Map.of("x-api-key", "test", "x-role", "user", "x-profile", "default");
         Mockito.when(bffProperties.getOllama()).thenReturn(Mockito.mock(BffProperties.Ollama.class));
         Mockito.when(bffProperties.getOllama().getModel()).thenReturn("mistral");
-        Mockito.when(ollamaClientService.generate(any(), any())).thenThrow(new RuntimeException("Fallo LLM"));
+        Mockito.when(ollamaClientService.generate(anyString(), anyString(), anyString(), anyString())).thenThrow(new RuntimeException("Fallo LLM"));
         String result = service.handleChat(headers, "hola");
         assertTrue(result.contains("Lo siento"));
     }
@@ -78,7 +78,7 @@ class BffOrchestratorServiceTest {
         Mockito.when(bffProperties.getOllama().getModel()).thenReturn("mistral");
         Mockito.when(bffProperties.getLlmFilterKeywords()).thenReturn(java.util.List.of());
         String json = "{\"response\":\"ok\",\"correlationId\":\"id\"}";
-        Mockito.when(ollamaClientService.generate(any(), any())).thenReturn(json);
+        Mockito.when(ollamaClientService.generate(anyString(), anyString(), anyString(), anyString())).thenReturn(json);
         String result = service.handleChat(headers, "hola");
         assertTrue(result.contains("ok"));
         assertTrue(result.contains("correlationId"));
@@ -90,7 +90,7 @@ class BffOrchestratorServiceTest {
         Mockito.when(bffProperties.getOllama()).thenReturn(Mockito.mock(BffProperties.Ollama.class));
         Mockito.when(bffProperties.getOllama().getModel()).thenReturn("mistral");
         Mockito.when(bffProperties.getLlmFilterKeywords()).thenReturn(java.util.List.of());
-        Mockito.when(ollamaClientService.generate(any(), any())).thenReturn("Solo texto plano");
+        Mockito.when(ollamaClientService.generate(anyString(), anyString(), anyString(), anyString())).thenReturn("Solo texto plano");
         String result = service.handleChat(headers, "hola");
         assertTrue(result.contains("Solo texto plano"));
         assertTrue(result.contains("correlationId"));
@@ -102,7 +102,7 @@ class BffOrchestratorServiceTest {
         Mockito.when(bffProperties.getOllama()).thenReturn(Mockito.mock(BffProperties.Ollama.class));
         Mockito.when(bffProperties.getOllama().getModel()).thenReturn("mistral");
         Mockito.when(bffProperties.getLlmFilterKeywords()).thenReturn(java.util.List.of("oculto"));
-        Mockito.when(ollamaClientService.generate(any(), any())).thenReturn("{\"response\":\"ok\noculto\",\"correlationId\":\"id\"}");
+        Mockito.when(ollamaClientService.generate(anyString(), anyString(), anyString(), anyString())).thenReturn("{\"response\":\"ok\noculto\",\"correlationId\":\"id\"}");
         String result = service.handleChat(headers, "hola");
         assertTrue(result.contains("ok"));
         assertFalse(result.contains("oculto"));

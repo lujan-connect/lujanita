@@ -20,6 +20,8 @@ public class BffOrchestratorService {
     private McpClientWebClientService mcpClientWebClientService;
     @Autowired
     private BffProperties bffProperties;
+    @Autowired
+    private com.lujanita.bff.prompt.PromptConfigService promptConfigService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -31,7 +33,11 @@ public class BffOrchestratorService {
         if (apiKey == null) {
             return "{\"code\":\"MW001\",\"message\":\"Falta apiKey\"}";
         }
-        if (!role.equals("user") || !profile.equals("default")) {
+
+        // Validar rol y perfil contra prompts.yml
+        boolean validRole = promptConfigService.isValidRole(role);
+        boolean validProfile = promptConfigService.isValidProfile(profile);
+        if (!validRole && !validProfile) {
             return "{\"code\":\"MW002\",\"message\":\"Rol o perfil inválido\"}";
         }
         if (message == null || message.isBlank()) {
@@ -46,8 +52,8 @@ public class BffOrchestratorService {
                 throw new IllegalStateException("El modelo de Ollama no está configurado en application.yml");
             }
 
-            // Llamar al servicio con modelo explícito
-            String ollamaResp = ollamaClientService.generate(model, message);
+            // Llamar al servicio con modelo explícito y prompts dinámicos
+            String ollamaResp = ollamaClientService.generate(model, message, role, profile);
 
             // Sanitizar respuesta contra filtrado literal de prompt
             String systemPrompt = bffProperties.getOllama().getSystemPrompt();

@@ -45,7 +45,9 @@ public class OllamaClientSteps {
             return;
         }
         // Lógica real usando OllamaClientService y parseo JSON
-        String rawResp = ollamaClientService.generate(model, mensajes);
+        String role = (String) ctx.getOrDefault("role", "user");
+        String profile = (String) ctx.getOrDefault("profile", "default");
+        String rawResp = ollamaClientService.generate(model, mensajes, role, profile);
         JsonNode resp = objectMapper.readTree(rawResp);
         ctx.put("ollamaResponse", resp);
     }
@@ -94,10 +96,12 @@ public class OllamaClientSteps {
     public void bff_invoca_ollama_chat() {
         String model = (String) ctx.getOrDefault("defaultModel", "tinyllama");
         Set<String> available = (Set<String>) ctx.getOrDefault("availableModels", Set.of("tinyllama"));
+        String role = (String) ctx.getOrDefault("role", "user");
+        String profile = (String) ctx.getOrDefault("profile", "default");
         if (!available.contains(model)) {
             ctx.put("ollamaError", "MODEL_NOT_FOUND");
         } else {
-            String resp = ollamaClientService.generate(model, "test");
+            String resp = ollamaClientService.generate(model, "test", role, profile);
             ctx.put("ollamaResponse", resp);
         }
     }
