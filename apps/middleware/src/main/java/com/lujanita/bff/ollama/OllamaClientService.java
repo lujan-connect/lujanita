@@ -15,6 +15,11 @@ import org.springframework.context.event.EventListener;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Service
 public class OllamaClientService {
@@ -28,22 +33,13 @@ public class OllamaClientService {
 
     public String generate(String model, String prompt) {
         String endpoint = bffProperties.getOllama().getEndpoint();
-        // Forzar SIEMPRE el modelo configurado en YAML (tinyllama)
         String modelName = bffProperties.getOllama().getModel();
-        int timeout = bffProperties.getOllama().getTimeoutMs();
         log.info("[Ollama] Usando modelo: {} (endpoint: {})", modelName, endpoint);
 
-        // Construir prompt final: prefijar systemPrompt si está configurado
+        // Unir contexto y directrices en un solo mensaje system
         String systemPrompt = bffProperties.getOllama().getSystemPrompt();
-        String botName = bffProperties.getChatbotName();
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
-            // Si el prompt contiene un placeholder explícito, úsalo
-            if (systemPrompt.contains("{chatbotName}") && botName != null) {
-                systemPrompt = systemPrompt.replace("{chatbotName}", botName);
-            }
-        }
         String assistantGuidelines = bffProperties.getOllama().getAssistantGuidelines();
-        // Render welcome message using configuration; no defaults en Java
+        String botName = bffProperties.getChatbotName();
         String welcomeTemplate = bffProperties != null ? bffProperties.getWelcomeMessage() : "";
         String welcomeRendered = "";
         if (welcomeTemplate != null && !welcomeTemplate.isBlank()) {
@@ -53,40 +49,61 @@ public class OllamaClientService {
                 welcomeRendered = welcomeTemplate;
             }
         }
-
-        StringBuilder sb = new StringBuilder();
-        // Construir prompt final solamente a partir de las propiedades (no hardcode en Java)
+        StringBuilder systemBuilder = new StringBuilder();
         if (systemPrompt != null && !systemPrompt.isBlank()) {
-            sb.append(systemPrompt.trim()).append("\n\n");
+            String sys = systemPrompt;
+            if (sys.contains("{chatbotName}") && botName != null) {
+                sys = sys.replace("{chatbotName}", botName);
+            }
+            systemBuilder.append(sys.trim()).append("\n");
         }
         if (assistantGuidelines != null && !assistantGuidelines.isBlank()) {
             String guidelinesRendered = assistantGuidelines;
             if (welcomeRendered != null && !welcomeRendered.isBlank()) {
                 guidelinesRendered = assistantGuidelines.replace("%s", welcomeRendered);
             }
-            sb.append(guidelinesRendered).append("\n\n");
+            systemBuilder.append(guidelinesRendered.trim()).append("\n");
         }
-        // Ajustar el prompt para dar prioridad al mensaje del usuario
-        sb.append("Instrucciones del sistema: ").append(systemPrompt == null ? "" : systemPrompt.trim()).append("\n\n");
-        sb.append("Contexto: ").append(assistantGuidelines == null ? "" : assistantGuidelines.trim()).append("\n\n");
-        sb.append("Mensaje del usuario: ").append(prompt == null ? "" : prompt.trim()).append("\n");
-        sb.append("Respuesta del asistente: "); // Preparar el espacio para la respuesta del asistente
-        String finalPrompt = sb.toString();
+        String systemFull = systemBuilder.toString().trim();
+
+        // Construcción correcta de mensajes para Spring AI
+        List<org.springframework.ai.chat.messages.Message> messages = new java.util.ArrayList<>();
+        if (!systemFull.isBlank()) {
+            messages.add(new org.springframework.ai.chat.messages.SystemMessage(systemFull));
+        }
+        // El mensaje del usuario debe ser el último y el foco principal
+        messages.add(new UserMessage(prompt == null ? "" : prompt.trim()));
+        Prompt chatPrompt = new Prompt(messages);
 
         try {
-            // Crear un mensaje de usuario con el prompt final utilizando Spring AI
-            UserMessage userMessage = new UserMessage(finalPrompt);
-            Prompt chatPrompt = new Prompt(List.of(userMessage));
-
-            // Llamar al cliente de Ollama con el prompt
             ChatResponse chatResponse = ollamaChatClient.call(chatPrompt);
-
-            // Manejar la respuesta utilizando las clases de Spring AI
             String result = chatResponse.getResult().getOutput().getContent();
             return result == null ? "" : result.trim();
         } catch (Exception e) {
-            log.error("[Ollama] Error al conectar con el modelo '{}': {}", modelName, e.getMessage());
-            throw new RuntimeException("Error al conectar con Ollama Spring AI (modelo: " + modelName + "): " + e.getMessage(), e);
+            log.error("[Ollama] Error al procesar el prompt: {}", e.getMessage(), e);
+            // Fallback HTTP directo si Spring AI falla
+            try {
+                RestTemplate rt = new RestTemplate();
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+                ObjectMapper mapper = new ObjectMapper();
+                ObjectNode body = mapper.createObjectNode();
+                body.put("model", modelName);
+                body.put("prompt", prompt == null ? "" : prompt.trim());
+                body.put("stream", false);
+                HttpEntity<String> request = new HttpEntity<>(mapper.writeValueAsString(body), headers);
+                ResponseEntity<String> resp = rt.postForEntity(endpoint, request, String.class);
+                String respBody = resp.getBody();
+                if (resp.getStatusCode().is2xxSuccessful() && respBody != null) {
+                    return respBody;
+                } else {
+                    log.error("[Ollama] Fallback HTTP falló con status {} y body: {}", resp.getStatusCodeValue(), respBody);
+                    throw new RuntimeException("Fallback HTTP a Ollama falló: status=" + resp.getStatusCodeValue());
+                }
+            } catch (Exception ex2) {
+                log.error("[Ollama] Fallback HTTP también falló: {}", ex2.getMessage());
+                throw new RuntimeException("Error al conectar con Ollama (modelo: " + modelName + "): " + ex2.getMessage(), ex2);
+            }
         }
     }
 
