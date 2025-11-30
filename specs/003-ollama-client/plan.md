@@ -1,149 +1,80 @@
----
-- Cambios en API Ollama → envolver en capa de compatibilidad
-- Faltan métricas → registrar `metricsMissing=true` y continuar
-- Latencia elevada en CPU → limitar `maxTokens`, ajustar `temperature`
-## Riesgos & Mitigaciones
+# Plan 003 - Cliente Ollama
 
----
+## Decisiones Arquitectónicas
+1. Acceso a Ollama vía HTTP streaming (endpoint `/api/generate` o equivalente) en lugar de dependencia fuerte de librería, para reducir acoplamiento y facilitar mocks.
+2. Uso de WebClient (Spring Reactive) para manejar streaming y timeouts configurable.
+3. Plantillas de prompt cargadas desde directorio `config/ollama/prompts/` con watcher (timestamp + cache local).
+4. Estrategia de fallback: si `onError` o no llega evento `done` en `streamTimeoutMs`, cancelar y ejecutar request sin streaming.
+5. CorrelationId: recibido desde capa BFF externa; si no existe generar (UUID v4) en pre-procesamiento.
+6. Métricas: Micrometer + meterRegistry (timers, distribution summaries, counters).
+7. Sanitización: lista corta de patrones a reemplazar (caracteres de control, secuencias repetitivas > N). Se implementa filtro antes del envío.
+8. Concurrencia: limitar máximo `maxConcurrentStreams` (Semaphore interna). Si excede, rechazar con LLM003 (STREAM_INTERRUPTED / capacity) o esperar (configurable).
+9. HealthCheck: petición ligera al endpoint `/api/tags` para confirmar modelos disponibles en warmup y luego cada intervalo.
+10. Config extensible para mapping role/profile→model (archivo `model-mapping.yaml`).
 
-4) Añadir unit tests para errores y límites de opciones
-3) Correr BDD (verde)
-2) Implementar `OllamaClient` mínimo
-1) Correr BDD (rojo)
-Secuencia:
+## Componentes
+- `OllamaClient`: fachada principal (métodos: `generate(promptCtx)`, `stream(promptCtx, consumer)`, `fallbackGenerate(promptCtx)`, `healthCheck()`).
+- `PromptBuilder`: construye y valida prompt completo.
+- `TemplateLoader`: carga y cachea plantillas, detecta cambios.
+- `ModelSelector`: resuelve modelo según role/profile.
+- `MetricsRecorder`: encapsula registro Micrometer.
+- `ErrorMapper`: traduce excepciones a códigos LLM00X.
 
-- Integración: simular endpoint Ollama (WireMock o SDK en modo mock)
-- Unit: pruebas de normalización de métricas y validación de opciones
-  - Error modelo no disponible
-  - Opciones soportadas v1
-  - Respuesta con métricas mínimas
-- BDD: `apps/middleware/features/ollama_client.feature`
-## Testing (Test-First)
+## Flujos Principales
+### Generar con Streaming
+1. BFF construye contexto → `PromptBuilder.build()`.
+2. `ModelSelector.select(role, profile)` obtiene modelo.
+3. `OllamaClient.stream()` abre conexión HTTP streaming.
+4. Emisión de fragmentos → callback `consumer.onChunk(text)`.
+5. Timeout o error → fallback.
+6. Final `consumer.onComplete(meta)` con tokens contados.
 
----
+### Fallback
+1. Abort streaming (cancel token).
+2. Ejecutar `generate()` (modo completo).
+3. Registrar `stream_fallback=true`.
 
-- Opciones por defecto: `{ temperature: 0.7, maxTokens: 128, stream: false }`
-- `OLLAMA_TIMEOUT=30000` ms
-- `OLLAMA_MODEL=tinyllama`
-- `OLLAMA_HOST=http://localhost:11434`
+### Template Reload
+1. En cada build si `lastModified` > `cachedModified` recargar.
+2. Validar schema (estructura mínima: `systemTemplate`, `roleOverlays`).
+
 ## Configuración
+- `ollama.baseUrl`
+- `ollama.streamTimeoutMs`
+- `ollama.maxPromptChars`
+- `ollama.maxConcurrentStreams`
+- `ollama.templateDir`
+- `ollama.modelMappingFile`
 
----
+## Errores Esperados
+- Timeout → `LLM001`
+- Modelo inexistente → `LLM002`
+- Stream interrumpido/capacidad → `LLM003`
+- Archivo de plantilla inválido → `LLM004`
+- Fallback fallido → `LLM005`
+- Desconocido → `LLM099`
 
-- Mapeo: retornar objeto error con `code`, `message`, `correlationId`
-- `LLM003 INVALID_OPTIONS`: opciones fuera de rango (p.ej., `maxTokens` negativo)
-- `LLM002 TIMEOUT`: operación excede `OLLAMA_TIMEOUT`
-- `LLM001 MODEL_NOT_FOUND`: modelo no disponible
-## Errores y Códigos (LLM00X)
+## Estrategia de Pruebas (Resumen, detalle en tasks.md)
+- Unit: PromptBuilder, TemplateLoader, ErrorMapper.
+- Integration: stream vs fallback (WireMock simulando Ollama).
+- BDD: Escenarios generados en fase 0.5 (tags FR-300x, @stream, @fallback, @error-timeout).
 
----
+## Observabilidad
+- Timer: `ollama_request_latency`
+- Distribution summary: `ollama_tokens_out`
+- Counter: `ollama_stream_fallbacks`
+- Gauge opcional: `ollama_active_streams`
 
-- Contadores por operación (futuro): número de inferencias por minuto
-- `promptTokens`, `completionTokens`: requeridos cuando Ollama los exponga; si faltan → `metricsMissing=true` en logs
-- `durationMs`: obligatorio
-## Métricas
+## Seguridad
+- No se envían credenciales del usuario al LLM, solo contexto filtrado.
+- Sanitizar prompt evita inyección de secuencias de control.
 
----
+## Riesgos Mitigación
+- Plantilla corrupta → validación schema + fallback a versión previa.
+- Saturación streams → Semaphore.
+- Alto costo latencia → monitoreo p95 y ajuste de modelo.
 
-- `ChatMetrics(promptTokens?, completionTokens?, durationMs)`
-- `OllamaChatResponse(model, response, done, metrics?)`
-- `ChatOptions(temperature?, maxTokens?, stream=false)`
-- `Message(role, content)`
-- `OllamaChatRequest(model, messages[], options)`
-## DTOs (borrador)
+## Próximas Extensiones
+- Incorporar embeddings y retrieval augment (fuera de esta release).
+- Cache local de respuestas frecuentes.
 
----
-
-  4) Registrar logs con `correlationId`, duración y estado
-  3) Capturar respuesta y normalizar métricas
-  2) Enviar a Ollama con timeouts (`OLLAMA_TIMEOUT`)
-  1) Construir request con `model`, `messages`, `options`
-- Flujo:
-  - `{ model, response, done, metrics?: { durationMs, promptTokens?, completionTokens? } }`
-- Output:
-  - `options`: `{ temperature?: number, maxTokens?: number, stream?: boolean=false }`
-  - `messages`: `[{ role: 'system'|'user'|'assistant', content: string }]`
-  - `model`: por defecto `tinyllama` (configurable)
-- Input:
-### ollama.chat(messages, options)
-
-## Operaciones y Flujos
-
----
-
-- Si en futuro se requiere seguridad local: evaluar header `Authorization` y lista blanca por IP.
-  - `X-Profile`: perfil (`default|internal`) sólo para logging
-  - `X-Role`: rol del cliente (`guest|agent|admin`) sólo para logging
-  - `X-Correlation-Id`: correlación end-to-end
-- Propagar contexto desde el BFF:
-- Ollama local no requiere `apiKey` por defecto.
-## Autenticación y Headers
-
----
-
-- Integración: usado por `ChatService` del BFF.
-- Responsabilidad: encapsular llamadas HTTP a Ollama (`/api/chat` o endpoint de SDK), gestionar opciones y retorno estandarizado.
-- Ubicación: `apps/middleware/src/main/java/com/lujanita/bff/client/llm/OllamaClient.java`
-## Arquitectura y Responsabilidad
-
----
-
-Cliente del BFF para interactuar con Ollama embebido (modelo ligero). Provee operación de chat con métricas, opciones v1 y mapeo de errores.
-## Resumen
-
-# Plan de Implementación - 003 ollama-client
-
----
-tags: [llm, ollama, client, bff, plan]
-owner: Lujanita Team
-last_updated: 2025-11-29
-date_created: 2025-11-29
-version: 1.0.0
-title: 003 - Plan de Implementación ollama-client
-
----
-
-## Prompts por rol/perfil (systemPrompt y userPromptOverrides)
-
-Objetivo: permitir que el BFF construya el contexto previo y ajuste el prompt del usuario según `role` y `profile`, propagados desde los clientes.
-
-Parámetros recibidos desde clientes (UI/BFF):
-- `role`: `guest|agent|admin`
-- `profile`: `default|internal|...`
-- `systemPrompt`: texto del mensaje `system` (contexto previo)
-- `userPromptOverrides`: objeto con ajustes (p.ej., idioma, estilo, formato)
-
-Construcción de `messages` para `ollama.chat`:
-1) Incluir `{ role: 'system', content: systemPrompt }`
-2) Aplicar `userPromptOverrides` sobre el texto del usuario antes de generar `{ role: 'user', content: ... }`
-3) Mantener mensajes previos de la sesión si aplica (fuera de alcance si no hay sesión global)
-
-Ejemplo (entrada/salida):
-- Entrada (del BFF hacia Ollama):
-  ```json
-  {
-    "model": "tinyllama",
-    "messages": [
-      { "role": "system", "content": "Eres Lujanita. Responde en español y sé concisa." },
-      { "role": "user", "content": "Estado del pedido SO001" }
-    ],
-    "options": { "temperature": 0.7, "maxTokens": 128, "stream": false }
-  }
-  ```
-- Salida normalizada (del cliente):
-  ```json
-  {
-    "model": "tinyllama",
-    "response": "El pedido SO001 está confirmado y se entrega el 02/12.",
-    "done": true,
-    "metrics": { "durationMs": 350, "promptTokens": 42, "completionTokens": 18 }
-  }
-  ```
-
-Observabilidad:
-- Loguear `{ correlationId, role, profile, llmOperation: 'chat', durationMs }`
-- No exponer contenido sensible del `systemPrompt` completo en logs (opcional: truncar/hashear)
-
-Trazabilidad (FR-LLM-008):
-- Este flujo cubre el requisito de aceptar y propagar `systemPrompt` y `userPromptOverrides` por rol/perfil.
-- Validar en BDD que el `systemPrompt` se inyecta como mensaje `system` y los overrides se aplican al mensaje `user`.
