@@ -187,6 +187,30 @@ platform/
 
 ---
 
+## 🏷️ Uso de Lombok en Java
+
+- Todas las clases Java de modelo, DTOs y configuraciones en `apps/middleware/` deben usar anotaciones de Lombok (
+  `@Data`, `@Getter`, `@Setter`, `@Builder`, etc.) para evitar boilerplate de getters/setters, equals, hashCode y
+  toString.
+- No escribir manualmente métodos de acceso salvo casos especiales (por ejemplo, lógica de validación o serialización
+  custom).
+- Importar Lombok en el `pom.xml` y asegurarse de que esté habilitado en el IDE.
+- Ejemplo:
+
+```java
+import lombok.Data;
+
+@Data
+public class MiDTO {
+    private String nombre;
+    private int edad;
+}
+```
+
+- Revisar y refactorizar clases existentes para cumplir este estándar.
+
+---
+
 ## 🧪 Testing (Test-First OBLIGATORIO)
 
 ### Pirámide
