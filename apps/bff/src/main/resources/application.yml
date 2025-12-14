@@ -93,6 +93,7 @@ bff:
     transport: streamable-http
     sessionEndpoint: ""
     staticSessionId: ${MCP_SESSION_ID:}
+    insecureSkipTlsVerify: true
   rate-limit:
     enabled: true
     requests-per-minute: 60
