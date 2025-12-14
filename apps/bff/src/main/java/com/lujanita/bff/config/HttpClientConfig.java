@@ -27,6 +27,8 @@ import java.time.Duration;
 @Configuration
 public class HttpClientConfig {
 
+    private static final int DEFAULT_TIMEOUT_MS = 30000;
+
     @Bean
     public RestTemplate restTemplate(BffProperties properties) {
         if (properties.getMcp().isInsecureSkipTlsVerify()) {
@@ -59,24 +61,26 @@ public class HttpClientConfig {
 
     @Bean
     public WebClient.Builder webClientBuilder(BffProperties properties) {
+        BffProperties.Mcp mcpProps = properties.getMcp();
+        
         // Configure connection provider with proper pool settings
         ConnectionProvider connectionProvider = ConnectionProvider.builder("mcp-connection-pool")
-            .maxConnections(50)
-            .maxIdleTime(Duration.ofSeconds(20))
-            .maxLifeTime(Duration.ofSeconds(60))
-            .pendingAcquireTimeout(Duration.ofSeconds(45))
-            .evictInBackground(Duration.ofSeconds(120))
+            .maxConnections(mcpProps.getMaxConnections())
+            .maxIdleTime(Duration.ofSeconds(mcpProps.getMaxIdleTimeSeconds()))
+            .maxLifeTime(Duration.ofSeconds(mcpProps.getMaxLifeTimeSeconds()))
+            .pendingAcquireTimeout(Duration.ofSeconds(mcpProps.getPendingAcquireTimeoutSeconds()))
+            .evictInBackground(Duration.ofSeconds(mcpProps.getEvictInBackgroundSeconds()))
             .build();
 
         // Get timeout from properties, default to 30 seconds
-        int timeoutMs = properties.getMcp().getTimeoutMs();
+        int timeoutMs = mcpProps.getTimeoutMs();
         if (timeoutMs <= 0) {
-            timeoutMs = 30000;
+            timeoutMs = DEFAULT_TIMEOUT_MS;
         }
         Duration timeout = Duration.ofMillis(timeoutMs);
 
         HttpClient httpClient;
-        if (properties.getMcp().isInsecureSkipTlsVerify()) {
+        if (mcpProps.isInsecureSkipTlsVerify()) {
             try {
                 var sslContext = SslContextBuilder.forClient()
                         .trustManager(InsecureTrustManagerFactory.INSTANCE)
