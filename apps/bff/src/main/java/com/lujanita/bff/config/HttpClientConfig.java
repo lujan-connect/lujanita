@@ -13,13 +13,12 @@ import org.apache.hc.core5.ssl.TrustAllStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import java.time.Duration;
 
 @Slf4j
@@ -59,18 +58,14 @@ public class HttpClientConfig {
     public WebClient.Builder webClientBuilder(BffProperties properties) {
         WebClient.Builder builder = WebClient.builder();
         if (properties.getMcp().isInsecureSkipTlsVerify()) {
-            try {
-                HttpClient httpClient = HttpClient.create()
-                        .secure(sslSpec -> sslSpec.sslContext(
-                                        SslContextBuilder.forClient()
-                                                .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                                                .build())
-                                .handshakeTimeout(Duration.ofSeconds(30))
-                        );
-                builder = builder.clientConnector(new ReactorClientHttpConnector(httpClient));
-            } catch (SSLException e) {
-                log.warn("No se pudo configurar WebClient inseguro, usando el por defecto", e);
-            }
+            HttpClient httpClient = HttpClient.create()
+                    .secure(sslSpec -> sslSpec.sslContext(
+                                    SslContextBuilder.forClient()
+                                            .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                                            .build())
+                            .handshakeTimeout(Duration.ofSeconds(30))
+                    );
+            builder = builder.clientConnector(new ReactorClientHttpConnector(httpClient));
         }
         return builder;
     }
