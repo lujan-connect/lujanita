@@ -101,8 +101,8 @@ public class OllamaClientService {
                 if (resp.getStatusCode().is2xxSuccessful() && respBody != null) {
                     return respBody;
                 } else {
-                    log.error("[Ollama] Fallback HTTP falló con status {} y body: {}", resp.getStatusCodeValue(), respBody);
-                    throw new RuntimeException("Fallback HTTP a Ollama falló: status=" + resp.getStatusCodeValue());
+                    log.error("[Ollama] Fallback HTTP falló con status {} y body: {}", resp.getStatusCode().value(), respBody);
+                    throw new RuntimeException("Fallback HTTP a Ollama falló: status=" + resp.getStatusCode().value());
                 }
             } catch (Exception ex2) {
                 log.error("[Ollama] Fallback HTTP también falló: {}", ex2.getMessage());

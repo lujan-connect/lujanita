@@ -1,7 +1,6 @@
 package com.lujanita.bff.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -61,6 +60,10 @@ public class BffProperties {
         private String testApiKey = "test";
         private String testRole = "user";
         private String testProfile = "default";
+        private String authToken;
+        private String transport;
+        private String sessionEndpoint;
+        private String staticSessionId;
         public String getEndpoint() { return endpoint; }
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
         public int getTimeoutMs() { return timeoutMs; }
@@ -75,6 +78,14 @@ public class BffProperties {
         public void setTestRole(String testRole) { this.testRole = testRole; }
         public String getTestProfile() { return testProfile; }
         public void setTestProfile(String testProfile) { this.testProfile = testProfile; }
+        public String getAuthToken() { return authToken; }
+        public void setAuthToken(String authToken) { this.authToken = authToken; }
+        public String getTransport() { return transport; }
+        public void setTransport(String transport) { this.transport = transport; }
+        public String getSessionEndpoint() { return sessionEndpoint; }
+        public void setSessionEndpoint(String sessionEndpoint) { this.sessionEndpoint = sessionEndpoint; }
+        public String getStaticSessionId() { return staticSessionId; }
+        public void setStaticSessionId(String staticSessionId) { this.staticSessionId = staticSessionId; }
     }
     public static class RateLimit {
         private boolean enabled;

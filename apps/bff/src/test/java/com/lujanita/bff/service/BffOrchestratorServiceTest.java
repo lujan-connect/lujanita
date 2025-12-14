@@ -17,17 +17,22 @@ class BffOrchestratorServiceTest {
     private OllamaClientService ollamaClientService;
     private McpClientWebClientService mcpClientWebClientService;
     private BffProperties bffProperties;
+    private com.lujanita.bff.prompt.PromptConfigService promptConfigService;
 
     @BeforeEach
     void setup() {
         ollamaClientService = Mockito.mock(OllamaClientService.class);
         mcpClientWebClientService = Mockito.mock(McpClientWebClientService.class);
         bffProperties = Mockito.mock(BffProperties.class);
+        promptConfigService = Mockito.mock(com.lujanita.bff.prompt.PromptConfigService.class);
         service = new BffOrchestratorService();
         // Inyección manual usando setters
         service.setOllamaClientService(ollamaClientService);
         service.setMcpClientWebClientService(mcpClientWebClientService);
         service.setBffProperties(bffProperties);
+        service.setPromptConfigService(promptConfigService);
+        Mockito.when(promptConfigService.isValidRole(Mockito.anyString())).thenReturn(true);
+        Mockito.when(promptConfigService.isValidProfile(Mockito.anyString())).thenReturn(true);
     }
 
     @Test
@@ -49,6 +54,8 @@ class BffOrchestratorServiceTest {
 
     @Test
     void handleMcpGeneric_returnsErrorIfInvalidRoleOrProfile() {
+        Mockito.when(promptConfigService.isValidRole("admin")).thenReturn(false);
+        Mockito.when(promptConfigService.isValidProfile("default")).thenReturn(false);
         Map<String, String> headers = Map.of("x-api-key", "test", "x-role", "admin", "x-profile", "default");
         String result = service.handleChat(headers, "mensaje");
         assertTrue(result.contains("MW002"));

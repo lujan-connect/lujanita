@@ -12,6 +12,7 @@ import java.util.UUID;
 import com.lujanita.bff.model.dto.McpResponse;
 import com.lujanita.bff.ollama.OllamaClientService;
 import com.lujanita.bff.mcp.McpClientService;
+import com.lujanita.bff.mcp.McpSessionService;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import com.lujanita.bff.config.BffProperties;
@@ -26,6 +27,8 @@ public class BffController {
     private OllamaClientService ollamaClientService;
     @Autowired
     private McpClientService mcpClientService;
+    @Autowired
+    private McpSessionService mcpSessionService;
     @Autowired
     private BffProperties bffProperties;
 
@@ -125,15 +128,34 @@ public class BffController {
         }
 
         // Verificar salud de MCP
+        String endpoint = bffProperties.getMcp().getEndpoint();
+        String apiKey = bffProperties.getMcp().getTestApiKey();
+        String role = bffProperties.getMcp().getTestRole();
+        String profile = bffProperties.getMcp().getTestProfile();
+        Map<String, String> dummyHeaders = new HashMap<>();
+        dummyHeaders.put("X-Api-Key", apiKey);
+        dummyHeaders.put("X-Role", role);
+        dummyHeaders.put("X-Profile", profile);
+        String sessionIdForLog = null;
         try {
-            Map<String, String> dummyHeaders = Map.of(
-                "X-Api-Key", bffProperties.getMcp().getTestApiKey(),
-                "X-Role", bffProperties.getMcp().getTestRole(),
-                "X-Profile", bffProperties.getMcp().getTestProfile()
-            );
+            String sessionId = mcpSessionService.getSessionId();
+            sessionIdForLog = sessionId;
+            if (sessionId != null && !sessionId.trim().isEmpty()) {
+                dummyHeaders.put("mcp-session-id", sessionId.trim());
+            }
+        } catch (Exception ignore) {}
+        log.info("[Health] MCP headers preparados: endpoint={} apiKey={} role={} profile={} mcpSession={}",
+            endpoint,
+            apiKey == null ? "<empty>" : (apiKey.length() <= 6 ? "***" : apiKey.substring(0,3)+"..."+apiKey.substring(apiKey.length()-3)),
+            role,
+            profile,
+            sessionIdForLog == null ? "<none>" : (sessionIdForLog.length() <= 6 ? "***" : sessionIdForLog.substring(0,3)+"..."+sessionIdForLog.substring(sessionIdForLog.length()-3))
+        );
+        try {
             mcpClientService.callMcp("orders.get", Map.of("orderId", "health"), dummyHeaders);
             components.put("odoo", Map.of("status", "up", "latencyMs", 50));
         } catch (Exception e) {
+            log.warn("❌ odoo: DOWN - Error: {} | endpoint={} | apiKey={} | role={} | profile={}", e.getMessage(), endpoint, apiKey, role, profile);
             components.put("odoo", Map.of("status", "down", "error", e.getMessage()));
         }
 
@@ -171,19 +193,39 @@ public class BffController {
         }
 
         // Verificar salud de MCP
+        String endpoint = bffProperties.getMcp().getEndpoint();
+        String apiKey = bffProperties.getMcp().getTestApiKey();
+        String role = bffProperties.getMcp().getTestRole();
+        String profile = bffProperties.getMcp().getTestProfile();
+        Map<String, String> dummyHeaders = new HashMap<>();
+        dummyHeaders.put("X-Api-Key", apiKey);
+        dummyHeaders.put("X-Role", role);
+        dummyHeaders.put("X-Profile", profile);
+        String sessionIdForLog2 = null;
         try {
-            Map<String, String> dummyHeaders = Map.of(
-                "X-Api-Key", bffProperties.getMcp().getTestApiKey(),
-                "X-Role", bffProperties.getMcp().getTestRole(),
-                "X-Profile", bffProperties.getMcp().getTestProfile()
-            );
+            String sessionId = mcpSessionService.getSessionId();
+            sessionIdForLog2 = sessionId;
+            if (sessionId != null && !sessionId.trim().isEmpty()) {
+                dummyHeaders.put("mcp-session-id", sessionId.trim());
+            }
+        } catch (Exception ignore) {}
+        log.info("[Startup Health] MCP headers: endpoint={} apiKey={} role={} profile={} mcpSession={}",
+            endpoint,
+            apiKey == null ? "<empty>" : (apiKey.length() <= 6 ? "***" : apiKey.substring(0,3)+"..."+apiKey.substring(apiKey.length()-3)),
+            role,
+            profile,
+            sessionIdForLog2 == null ? "<none>" : (sessionIdForLog2.length() <= 6 ? "***" : sessionIdForLog2.substring(0,3)+"..."+sessionIdForLog2.substring(sessionIdForLog2.length()-3))
+        );
+        try {
             mcpClientService.callMcp("orders.get", Map.of("orderId", "health"), dummyHeaders);
             components.put("odoo", Map.of("status", "up", "latencyMs", 50));
         } catch (Exception e) {
+            log.warn("❌ odoo: DOWN - Error: {} | endpoint={} | apiKey={} | role={} | profile={}", e.getMessage(), endpoint, apiKey, role, profile);
             components.put("odoo", Map.of("status", "down", "error", e.getMessage()));
         }
 
         components.forEach((key, value) -> {
+            @SuppressWarnings("unchecked")
             Map<String, Object> component = (Map<String, Object>) value;
             String status = (String) component.get("status");
             if ("up".equals(status)) {

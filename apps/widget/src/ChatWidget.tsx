@@ -12,6 +12,15 @@ interface Props {
 export const ChatWidget: React.FC<Props> = ({ config, locale = 'es' }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [history, setHistory] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('lujanita.chat.history');
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter(x => typeof x === 'string') : [];
+    } catch { return []; }
+  });
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
   const chatServiceRef = useRef(createChatService(config));
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,6 +39,14 @@ export const ChatWidget: React.FC<Props> = ({ config, locale = 'es' }) => {
 
   const send = async () => {
     if (!input.trim()) return;
+    // update history
+    setHistory(prev => {
+      const next = [...prev, input];
+      const bounded = next.slice(-100);
+      try { localStorage.setItem('lujanita.chat.history', JSON.stringify(bounded)); } catch {}
+      return bounded;
+    });
+    setHistoryIndex(-1);
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
@@ -109,7 +126,31 @@ export const ChatWidget: React.FC<Props> = ({ config, locale = 'es' }) => {
           }}
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') send(); }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              send();
+            } else if (e.key === 'ArrowUp') {
+              // navigate history backwards
+              e.preventDefault();
+              if (history.length === 0) return;
+              const nextIndex = historyIndex < 0 ? history.length - 1 : Math.max(0, historyIndex - 1);
+              setHistoryIndex(nextIndex);
+              setInput(history[nextIndex] || '');
+            } else if (e.key === 'ArrowDown') {
+              // navigate history forwards
+              e.preventDefault();
+              if (history.length === 0) return;
+              if (historyIndex < 0) return; // nothing to go forward from
+              const nextIndex = historyIndex + 1;
+              if (nextIndex >= history.length) {
+                setHistoryIndex(-1);
+                setInput('');
+              } else {
+                setHistoryIndex(nextIndex);
+                setInput(history[nextIndex] || '');
+              }
+            }
+          }}
         />
         <button
           aria-label="send-button"

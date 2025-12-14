@@ -63,6 +63,10 @@ public class MockMcpAutoStarter {
         public void handle(HttpExchange exchange) throws IOException {
             String response = "{}";
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            // Handshake: devolver header mcp-session-id simulando el servidor real
+            if (body.contains("\"method\":\"handshake\"")) {
+                exchange.getResponseHeaders().add("mcp-session-id", "mock-session-id");
+            }
             // Simula el contrato MCP real del llm_mcp_server de Odoo (métodos comunes)
             if (body.contains("\"method\":\"orders.get\"")) {
                 if (body.contains("includeLines") && body.contains("true")) {
@@ -138,4 +142,3 @@ public class MockMcpAutoStarter {
         }
     }
 }
-
