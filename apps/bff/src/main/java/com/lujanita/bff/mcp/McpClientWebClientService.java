@@ -104,8 +104,13 @@ public class McpClientWebClientService {
             .retryWhen(
                 Retry.fixedDelay(2, Duration.ofSeconds(1))
                     .filter(e -> isRetryableException(e))
-                    .doBeforeRetry(signal -> log.warn("[MCP][WebClient] Reintentando tras error (intento {}): {}", 
-                            signal.totalRetries() + 1, signal.failure().getMessage()))
+                    .doBeforeRetry(signal -> {
+                        String errorMsg = signal.failure() != null && signal.failure().getMessage() != null 
+                            ? signal.failure().getMessage() 
+                            : "Unknown error";
+                        log.warn("[MCP][WebClient] Reintentando tras error (intento {}): {}", 
+                                signal.totalRetries() + 1, errorMsg);
+                    })
                     .onRetryExhaustedThrow((spec, signal) -> signal.failure())
             )
             .map(body -> {

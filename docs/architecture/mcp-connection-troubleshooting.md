@@ -239,6 +239,6 @@ curl -X POST http://localhost:9000/api/chat \
 ## References
 
 - [Spec 004: Odoo MCP Client](../../specs/004-odoo-mcp-client/spec.md)
-- [MCP Contracts](.github/copilot-knowledge/contracts-mcp.md)
+- [MCP Contracts](../../.github/copilot-knowledge/contracts-mcp.md)
 - [Reactor Netty Documentation](https://projectreactor.io/docs/netty/release/reference/index.html)
 - [Apache HttpClient 5 Documentation](https://hc.apache.org/httpcomponents-client-5.2.x/)

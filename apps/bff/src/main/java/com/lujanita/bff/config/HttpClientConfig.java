@@ -36,6 +36,11 @@ public class HttpClientConfig {
 
     @Bean
     public RestTemplate restTemplate(BffProperties properties) {
+        if (properties == null || properties.getMcp() == null) {
+            log.warn("BffProperties or MCP config is null, using default RestTemplate");
+            return new RestTemplate();
+        }
+        
         int timeoutMs = properties.getMcp().getTimeoutMs();
         log.info("Configurando RestTemplate con timeout={}ms, insecureSkipTlsVerify={}", 
                  timeoutMs, properties.getMcp().isInsecureSkipTlsVerify());
@@ -103,6 +108,11 @@ public class HttpClientConfig {
 
     @Bean
     public WebClient.Builder webClientBuilder(BffProperties properties) {
+        if (properties == null || properties.getMcp() == null) {
+            log.warn("BffProperties or MCP config is null, using default WebClient.Builder");
+            return WebClient.builder();
+        }
+        
         int timeoutMs = properties.getMcp().getTimeoutMs();
         log.info("Configurando WebClient con timeout={}ms, insecureSkipTlsVerify={}", 
                  timeoutMs, properties.getMcp().isInsecureSkipTlsVerify());
