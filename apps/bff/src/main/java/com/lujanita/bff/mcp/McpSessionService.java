@@ -130,6 +130,15 @@ public class McpSessionService {
         return Optional.ofNullable(primary).orElse(fallback);
     }
 
+    private String sanitizeTransport(String configuredTransport) {
+        String transport = Optional.ofNullable(configuredTransport).orElse("http").trim();
+        if (!transport.equalsIgnoreCase("http")) {
+            log.warn("[MCP][Session] Transport '{}' no soportado por Odoo llm_mcp_server; forzando 'http'", transport);
+            transport = "http";
+        }
+        return transport;
+    }
+
     public String resolveApiKeyPublic() {
         return resolveApiKey();
     }

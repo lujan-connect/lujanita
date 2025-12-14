@@ -144,4 +144,13 @@ public class McpClientService {
         if (token.length() <= 6) return "***" + token.charAt(token.length() - 1);
         return token.substring(0, 3) + "..." + token.substring(token.length() - 3);
     }
+
+    private String sanitizeTransport(String configuredTransport) {
+        String transport = Optional.ofNullable(configuredTransport).orElse("http").trim();
+        if (!transport.equalsIgnoreCase("http")) {
+            log.warn("[MCP][RestTemplate] Transport '{}' no soportado por Odoo llm_mcp_server; forzando 'http'", transport);
+            transport = "http";
+        }
+        return transport;
+    }
 }

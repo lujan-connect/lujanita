@@ -201,6 +201,15 @@ public class McpClientWebClientService {
         return token.substring(0, 3) + "..." + token.substring(token.length() - 3);
     }
 
+    private String sanitizeTransport(String configuredTransport) {
+        String transport = Optional.ofNullable(configuredTransport).orElse("http").trim();
+        if (!transport.equalsIgnoreCase("http")) {
+            log.warn("[MCP][WebClient] Transport '{}' no soportado por Odoo llm_mcp_server; forzando 'http'", transport);
+            transport = "http";
+        }
+        return transport;
+    }
+
     private String resolveApiKey() {
         String primary = bffProperties.getMcp().getAuthToken();
         if (isPlaceholder(primary)) primary = null;
