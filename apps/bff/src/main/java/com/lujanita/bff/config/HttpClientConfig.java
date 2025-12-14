@@ -9,7 +9,7 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
-import org.apache.hc.core5.ssl.TrustAllStrategy;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -19,6 +19,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 import java.time.Duration;
 
 @Slf4j
@@ -29,9 +30,10 @@ public class HttpClientConfig {
     public RestTemplate restTemplate(BffProperties properties) {
         if (properties.getMcp().isInsecureSkipTlsVerify()) {
             try {
+                TrustStrategy trustAllStrategy = (chain, authType) -> true;
                 SSLContext sslContext = SSLContexts.custom()
-                        .loadTrustMaterial(null, TrustAllStrategy.INSTANCE)
-                        .build();
+                    .loadTrustMaterial(null, trustAllStrategy)
+                    .build();
 
                 var sslSocketFactory = SSLConnectionSocketFactoryBuilder.create()
                         .setSslContext(sslContext)
@@ -58,13 +60,20 @@ public class HttpClientConfig {
     public WebClient.Builder webClientBuilder(BffProperties properties) {
         WebClient.Builder builder = WebClient.builder();
         if (properties.getMcp().isInsecureSkipTlsVerify()) {
-            HttpClient httpClient = HttpClient.create()
-                    .secure(sslSpec -> sslSpec.sslContext(
-                                    SslContextBuilder.forClient()
-                                            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                                            .build())
+            HttpClient httpClient;
+            try {
+                var sslContext = SslContextBuilder.forClient()
+                        .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                        .build();
+                httpClient = HttpClient.create()
+                    .secure(sslSpec ->
+                        sslSpec
+                            .sslContext(sslContext)
                             .handshakeTimeout(Duration.ofSeconds(30))
                     );
+            } catch (SSLException e) {
+                throw new RuntimeException("Failed to build insecure SSL context for WebClient", e);
+            }
             builder = builder.clientConnector(new ReactorClientHttpConnector(httpClient));
         }
         return builder;

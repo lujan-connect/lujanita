@@ -85,6 +85,7 @@ bff:
     timeoutMs: 10000
     enabled: true
     mockEnabled: false
+    experimentalUseRmcpClient: ${EXPERIMENTAL_USE_RMCP_CLIENT:true}
     # Se toma primero de AUTH_TOKEN, luego TEST_API_KEY
     authToken: ${AUTH_TOKEN:}
     testApiKey: ${TEST_API_KEY:demo}

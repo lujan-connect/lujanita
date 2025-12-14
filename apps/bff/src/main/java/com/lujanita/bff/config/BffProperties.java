@@ -57,6 +57,7 @@ public class BffProperties {
         private int timeoutMs;
         private boolean enabled = true;
         private boolean mockEnabled = false;
+        private boolean experimentalUseRmcpClient = false;
         private String testApiKey = "test";
         private String testRole = "user";
         private String testProfile = "default";
@@ -73,6 +74,8 @@ public class BffProperties {
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
         public boolean isMockEnabled() { return mockEnabled; }
         public void setMockEnabled(boolean mockEnabled) { this.mockEnabled = mockEnabled; }
+        public boolean isExperimentalUseRmcpClient() { return experimentalUseRmcpClient; }
+        public void setExperimentalUseRmcpClient(boolean experimentalUseRmcpClient) { this.experimentalUseRmcpClient = experimentalUseRmcpClient; }
         public String getTestApiKey() { return testApiKey; }
         public void setTestApiKey(String testApiKey) { this.testApiKey = testApiKey; }
         public String getTestRole() { return testRole; }
