@@ -98,8 +98,13 @@ public class McpClientWebClientService {
             .bodyValue(payload)
             .exchangeToMono(resp -> resp.bodyToMono(String.class).defaultIfEmpty(""))
             .retryWhen(
-                Retry.fixedDelay(3, Duration.ofMillis(300))
-                    .filter(e -> e instanceof reactor.netty.http.client.PrematureCloseException)
+                Retry.backoff(3, Duration.ofMillis(500))
+                    .maxBackoff(Duration.ofSeconds(2))
+                    .filter(e -> e instanceof reactor.netty.http.client.PrematureCloseException
+                               || e instanceof java.nio.channels.ClosedChannelException
+                               || e instanceof java.io.IOException)
+                    .doBeforeRetry(signal -> log.warn("[MCP][WebClient] Reintentando tras error (intento {}): {}", 
+                        signal.totalRetries() + 1, signal.failure().getMessage()))
                     .onRetryExhaustedThrow((spec, signal) -> signal.failure())
             )
             .map(body -> {

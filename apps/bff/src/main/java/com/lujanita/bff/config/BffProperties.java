@@ -66,6 +66,13 @@ public class BffProperties {
         private String sessionEndpoint;
         private String staticSessionId;
         private boolean insecureSkipTlsVerify = false;
+        // Connection pool settings
+        private int maxConnections = 50;
+        private int maxIdleTimeSeconds = 20;
+        private int maxLifeTimeSeconds = 60;
+        private int pendingAcquireTimeoutSeconds = 45;
+        private int evictInBackgroundSeconds = 120;
+        
         public String getEndpoint() { return endpoint; }
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
         public int getTimeoutMs() { return timeoutMs; }
@@ -92,6 +99,16 @@ public class BffProperties {
         public void setStaticSessionId(String staticSessionId) { this.staticSessionId = staticSessionId; }
         public boolean isInsecureSkipTlsVerify() { return insecureSkipTlsVerify; }
         public void setInsecureSkipTlsVerify(boolean insecureSkipTlsVerify) { this.insecureSkipTlsVerify = insecureSkipTlsVerify; }
+        public int getMaxConnections() { return maxConnections; }
+        public void setMaxConnections(int maxConnections) { this.maxConnections = maxConnections; }
+        public int getMaxIdleTimeSeconds() { return maxIdleTimeSeconds; }
+        public void setMaxIdleTimeSeconds(int maxIdleTimeSeconds) { this.maxIdleTimeSeconds = maxIdleTimeSeconds; }
+        public int getMaxLifeTimeSeconds() { return maxLifeTimeSeconds; }
+        public void setMaxLifeTimeSeconds(int maxLifeTimeSeconds) { this.maxLifeTimeSeconds = maxLifeTimeSeconds; }
+        public int getPendingAcquireTimeoutSeconds() { return pendingAcquireTimeoutSeconds; }
+        public void setPendingAcquireTimeoutSeconds(int pendingAcquireTimeoutSeconds) { this.pendingAcquireTimeoutSeconds = pendingAcquireTimeoutSeconds; }
+        public int getEvictInBackgroundSeconds() { return evictInBackgroundSeconds; }
+        public void setEvictInBackgroundSeconds(int evictInBackgroundSeconds) { this.evictInBackgroundSeconds = evictInBackgroundSeconds; }
     }
     public static class RateLimit {
         private boolean enabled;
