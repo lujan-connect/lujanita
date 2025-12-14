@@ -15,7 +15,9 @@ class McpClientWebClientServiceTest {
         // Arrange
         BffPropertiesMock props = new BffPropertiesMock();
         WebClient.Builder builder = WebClient.builder();
-        McpClientWebClientService service = new McpClientWebClientService(props, builder);
+        McpSessionService sessionService = Mockito.mock(McpSessionService.class);
+        Mockito.when(sessionService.getSessionId()).thenReturn("test-session-id");
+        McpClientWebClientService service = new McpClientWebClientService(props, builder, sessionService);
         // Simula endpoint inválido
         McpResponse resp = service.callMcp("test.method", Map.of(), Map.of()).block();
         assertNotNull(resp);

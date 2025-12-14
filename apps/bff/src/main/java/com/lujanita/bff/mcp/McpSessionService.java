@@ -20,10 +20,11 @@ import java.util.concurrent.atomic.AtomicReference;
 public class McpSessionService {
     private final BffProperties bffProperties;
     private final AtomicReference<String> cachedSession = new AtomicReference<>();
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
-    public McpSessionService(BffProperties bffProperties) {
+    public McpSessionService(BffProperties bffProperties, RestTemplate restTemplate) {
         this.bffProperties = bffProperties;
+        this.restTemplate = restTemplate;
     }
 
     public String getSessionId() {
