@@ -91,7 +91,8 @@ bff:
     testApiKey: ${TEST_API_KEY:demo}
     testRole: ${TEST_ROLE:vendedor}
     testProfile: ${TEST_PROFILE:cliente}
-    transport: streamable-http
+    # El módulo llm_mcp_server de Odoo sólo soporta transporte HTTP síncrono
+    transport: http
     sessionEndpoint: ""
     staticSessionId: ${MCP_SESSION_ID:}
     insecureSkipTlsVerify: true

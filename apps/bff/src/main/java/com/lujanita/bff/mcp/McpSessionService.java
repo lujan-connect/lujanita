@@ -82,10 +82,8 @@ public class McpSessionService {
         }
         headers.set("Authorization", "Bearer " + apiKey);
         headers.set("X-Api-Key", apiKey);
-        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("streamable-http").trim();
-        if (!transport.isBlank()) {
-            headers.set("MCP-Transport", transport);
-        }
+        String transport = sanitizeTransport(bffProperties.getMcp().getTransport());
+        headers.set("MCP-Transport", transport);
         Optional.ofNullable(bffProperties.getMcp().getTestRole()).filter(s -> !s.isBlank()).ifPresent(r -> headers.set("X-Role", r));
         Optional.ofNullable(bffProperties.getMcp().getTestProfile()).filter(s -> !s.isBlank()).ifPresent(p -> headers.set("X-Profile", p));
 
@@ -128,6 +126,15 @@ public class McpSessionService {
         String fallback = bffProperties.getMcp().getTestApiKey();
         if (isPlaceholder(fallback)) fallback = null;
         return Optional.ofNullable(primary).orElse(fallback);
+    }
+
+    private String sanitizeTransport(String configuredTransport) {
+        String transport = Optional.ofNullable(configuredTransport).orElse("http").trim();
+        if (!transport.equalsIgnoreCase("http")) {
+            log.warn("[MCP][Session] Transport '{}' no soportado por Odoo llm_mcp_server; forzando 'http'", transport);
+            transport = "http";
+        }
+        return transport;
     }
 
     public String resolveApiKeyPublic() {

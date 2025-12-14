@@ -39,8 +39,8 @@ public class McpClientService {
             effectiveHeaders.put("Authorization", "Bearer " + authToken);
             effectiveHeaders.put("X-Api-Key", authToken);
         }
-        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("streamable-http").trim();
-        if (!transport.isBlank()) effectiveHeaders.put("MCP-Transport", transport);
+        String transport = sanitizeTransport(bffProperties.getMcp().getTransport());
+        effectiveHeaders.put("MCP-Transport", transport);
         String roleHeader = headers == null ? null : (headers.get("X-Role") != null ? headers.get("X-Role") : headers.get("x-role"));
         if (roleHeader != null && !roleHeader.isBlank()) {
             effectiveHeaders.put("X-Role", roleHeader);
@@ -143,5 +143,14 @@ public class McpClientService {
         if (token == null || token.isBlank()) return "<empty>";
         if (token.length() <= 6) return "***" + token.charAt(token.length() - 1);
         return token.substring(0, 3) + "..." + token.substring(token.length() - 3);
+    }
+
+    private String sanitizeTransport(String configuredTransport) {
+        String transport = Optional.ofNullable(configuredTransport).orElse("http").trim();
+        if (!transport.equalsIgnoreCase("http")) {
+            log.warn("[MCP][RestTemplate] Transport '{}' no soportado por Odoo llm_mcp_server; forzando 'http'", transport);
+            transport = "http";
+        }
+        return transport;
     }
 }
