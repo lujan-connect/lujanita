@@ -64,6 +64,7 @@ public class BffProperties {
         private String transport;
         private String sessionEndpoint;
         private String staticSessionId;
+        private boolean insecureSkipTlsVerify = false;
         public String getEndpoint() { return endpoint; }
         public void setEndpoint(String endpoint) { this.endpoint = endpoint; }
         public int getTimeoutMs() { return timeoutMs; }
@@ -86,6 +87,8 @@ public class BffProperties {
         public void setSessionEndpoint(String sessionEndpoint) { this.sessionEndpoint = sessionEndpoint; }
         public String getStaticSessionId() { return staticSessionId; }
         public void setStaticSessionId(String staticSessionId) { this.staticSessionId = staticSessionId; }
+        public boolean isInsecureSkipTlsVerify() { return insecureSkipTlsVerify; }
+        public void setInsecureSkipTlsVerify(boolean insecureSkipTlsVerify) { this.insecureSkipTlsVerify = insecureSkipTlsVerify; }
     }
     public static class RateLimit {
         private boolean enabled;
