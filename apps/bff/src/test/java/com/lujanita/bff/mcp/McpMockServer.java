@@ -27,6 +27,9 @@ public class McpMockServer {
         public void handle(HttpExchange exchange) throws IOException {
             String response = "{}";
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            if (body.contains("\"method\":\"handshake\"")) {
+                exchange.getResponseHeaders().add("mcp-session-id", "mock-session-id");
+            }
             // Simula el contrato MCP real del llm_mcp_server de Odoo
             if (body.contains("\"method\":\"orders.get\"")) {
                 if (body.contains("includeLines") && body.contains("true")) {

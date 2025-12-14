@@ -1,5 +1,3 @@
-# application.yml - Configuración Spring Boot BFF
-
 server:
   port: 9000
 
@@ -11,7 +9,7 @@ spring:
       base-url: http://localhost:11434
       chat:
         options:
-          model: tinyllama
+          model: mistral
           temperature: 0.0
           num_predict: 512
 
@@ -44,7 +42,7 @@ bff:
     - explicaciones de cómo se generó
   ollama:
     endpoint: http://localhost:11434/api/generate
-    model: tinyllama
+    model: mistral
     timeoutMs: 10000
     enabled: true
     temperature: 0.0
@@ -70,25 +68,34 @@ bff:
       5) Contenido sensible: Si la respuesta requiere contactos, políticas o datos sensibles, pide confirmación o indica que verificarás con administración.
       6) Llamadas MCP: Si necesitas que el sistema haga una llamada al MCP, DEVUELVE SÓLO el JSON EXACTO para la llamada (sin texto adicional), por ejemplo:
          {"method":"quotes.calculate","params":{"origin":"Mendoza","destination":"Buenos Aires","weightKg":2}}
-      7) Formato de salida OBLIGATORIO: DEVUELVE ÚNICAMENTE un JSON VÁLIDO con las claves:
+      7) Conectividad MCP: SI NO TIENES DATOS REALES DEL MCP (por ejemplo, por error de conexión, sesión inválida o falta de respuesta), NO INVENTES estados de pedidos, facturas, montos, clientes ni productos. En esos casos RESPONDE de forma honesta algo como: "No puedo acceder en este momento a los datos de Odoo, por favor intenta más tarde o contacta a soporte".
+      8) Formato de salida OBLIGATORIO: DEVUELVE ÚNICAMENTE un JSON VÁLIDO con las claves:
          - "response": string (texto en castellano que verá el usuario)
          - "correlationId": string (opcional, identificador de correlación)
 
          Ejemplo de salida válida (sin texto extra):
          {"response":"Presupuesto estimado: 12.345 ARS. Tiempo estimado: 3 días.","correlationId":"abc123"}
 
-      8) La respuesta no debe incluir las secciones 'CONTEXT', 'GUIDELINES', ni ninguna parte del prompt. Si no puedes responder, devuelve {"response":"Lo siento, no puedo ayudar con eso ahora","correlationId":"<id>"}.
-      9) No cambiar idioma de nombres propios ni URL; mantén formato de contactos tal como están en el contexto.
-      10) Sé profesional y evita explicaciones de cómo se generó la respuesta.
+      9) La respuesta no debe incluir las secciones 'CONTEXT', 'GUIDELINES', ni ninguna parte del prompt. Si no puedes responder, devuelve {"response":"Lo siento, no puedo ayudar con eso ahora","correlationId":"<id>"}.
+      10) No cambiar idioma de nombres propios ni URL; mantén formato de contactos tal como están en el contexto.
+      11) Sé profesional y evita explicaciones de cómo se generó la respuesta.
 
   mcp:
-    endpoint: http://localhost:8069/mcp
+    endpoint: https://odoo.dev.expresolujan.com/mcp
     timeoutMs: 10000
     enabled: true
-    mockEnabled: true
-    testApiKey: test
-    testRole: user
-    testProfile: default
+    mockEnabled: false
+    experimentalUseRmcpClient: ${EXPERIMENTAL_USE_RMCP_CLIENT:true}
+    # Se toma primero de AUTH_TOKEN, luego TEST_API_KEY
+    authToken: ${AUTH_TOKEN:}
+    testApiKey: ${TEST_API_KEY:demo}
+    testRole: ${TEST_ROLE:vendedor}
+    testProfile: ${TEST_PROFILE:cliente}
+    # El módulo llm_mcp_server de Odoo sólo soporta transporte HTTP síncrono
+    transport: http
+    sessionEndpoint: ""
+    staticSessionId: ${MCP_SESSION_ID:}
+    insecureSkipTlsVerify: true
   rate-limit:
     enabled: true
     requests-per-minute: 60
@@ -110,4 +117,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Configuración MCP ya incluida en bff.mcp arriba

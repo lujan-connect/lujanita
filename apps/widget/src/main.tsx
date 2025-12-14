@@ -7,7 +7,7 @@ if (rootEl) {
   const root = createRoot(rootEl);
   root.render(
     <ChatWidget
-      config={{ apiKey: 'demo', role: 'user', profile: 'default', endpoint: 'http://localhost:9000', primaryColor: '#0066cc', backgroundColor: '#ffffff' }}
+      config={{ apiKey: 'demo', role: 'vendedor', profile: 'cliente', endpoint: 'http://localhost:9000', primaryColor: '#0066cc', backgroundColor: '#ffffff' }}
       locale="es"
     />
   );
