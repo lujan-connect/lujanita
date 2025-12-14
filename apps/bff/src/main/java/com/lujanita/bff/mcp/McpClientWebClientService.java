@@ -73,8 +73,10 @@ public class McpClientWebClientService {
         if (sessionId != null && !sessionId.isBlank()) {
             effectiveHeaders.put("mcp-session-id", sessionId);
         }
-        String transport = sanitizeTransport(bffProperties.getMcp().getTransport());
-        effectiveHeaders.put("MCP-Transport", transport);
+        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("http");
+        if (!transport.isBlank()) {
+            effectiveHeaders.put("MCP-Transport", transport.trim());
+        }
 
         log.info("[MCP][WebClient] Llamando MCP endpoint={} method={} authToken={} mcpSession={} headers=\n{}",
                 endpoint,

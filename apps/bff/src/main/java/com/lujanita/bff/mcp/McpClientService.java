@@ -39,8 +39,8 @@ public class McpClientService {
             effectiveHeaders.put("Authorization", "Bearer " + authToken);
             effectiveHeaders.put("X-Api-Key", authToken);
         }
-        String transport = sanitizeTransport(bffProperties.getMcp().getTransport());
-        effectiveHeaders.put("MCP-Transport", transport);
+        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("http").trim();
+        if (!transport.isBlank()) effectiveHeaders.put("MCP-Transport", transport);
         String roleHeader = headers == null ? null : (headers.get("X-Role") != null ? headers.get("X-Role") : headers.get("x-role"));
         if (roleHeader != null && !roleHeader.isBlank()) {
             effectiveHeaders.put("X-Role", roleHeader);

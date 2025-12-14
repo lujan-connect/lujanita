@@ -82,8 +82,10 @@ public class McpSessionService {
         }
         headers.set("Authorization", "Bearer " + apiKey);
         headers.set("X-Api-Key", apiKey);
-        String transport = sanitizeTransport(bffProperties.getMcp().getTransport());
-        headers.set("MCP-Transport", transport);
+        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("http").trim();
+        if (!transport.isBlank()) {
+            headers.set("MCP-Transport", transport);
+        }
         Optional.ofNullable(bffProperties.getMcp().getTestRole()).filter(s -> !s.isBlank()).ifPresent(r -> headers.set("X-Role", r));
         Optional.ofNullable(bffProperties.getMcp().getTestProfile()).filter(s -> !s.isBlank()).ifPresent(p -> headers.set("X-Profile", p));
 
