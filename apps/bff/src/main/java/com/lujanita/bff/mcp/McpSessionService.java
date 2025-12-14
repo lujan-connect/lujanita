@@ -82,7 +82,7 @@ public class McpSessionService {
         }
         headers.set("Authorization", "Bearer " + apiKey);
         headers.set("X-Api-Key", apiKey);
-        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("streamable-http").trim();
+        String transport = Optional.ofNullable(bffProperties.getMcp().getTransport()).orElse("http").trim();
         if (!transport.isBlank()) {
             headers.set("MCP-Transport", transport);
         }
