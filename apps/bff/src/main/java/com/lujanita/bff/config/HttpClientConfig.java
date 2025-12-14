@@ -17,6 +17,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -58,24 +59,57 @@ public class HttpClientConfig {
 
     @Bean
     public WebClient.Builder webClientBuilder(BffProperties properties) {
-        WebClient.Builder builder = WebClient.builder();
+        // Configure connection provider with proper pool settings
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("mcp-connection-pool")
+            .maxConnections(50)
+            .maxIdleTime(Duration.ofSeconds(20))
+            .maxLifeTime(Duration.ofSeconds(60))
+            .pendingAcquireTimeout(Duration.ofSeconds(45))
+            .evictInBackground(Duration.ofSeconds(120))
+            .build();
+
+        // Get timeout from properties, default to 30 seconds
+        int timeoutMs = properties.getMcp().getTimeoutMs();
+        if (timeoutMs <= 0) {
+            timeoutMs = 30000;
+        }
+        Duration timeout = Duration.ofMillis(timeoutMs);
+
+        HttpClient httpClient;
         if (properties.getMcp().isInsecureSkipTlsVerify()) {
-            HttpClient httpClient;
             try {
                 var sslContext = SslContextBuilder.forClient()
                         .trustManager(InsecureTrustManagerFactory.INSTANCE)
                         .build();
-                httpClient = HttpClient.create()
+                httpClient = HttpClient.create(connectionProvider)
                     .secure(sslSpec ->
                         sslSpec
                             .sslContext(sslContext)
                             .handshakeTimeout(Duration.ofSeconds(30))
+                    )
+                    .responseTimeout(timeout)
+                    .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMs)
+                    .option(io.netty.channel.ChannelOption.SO_KEEPALIVE, true)
+                    .doOnConnected(conn ->
+                        conn.addHandlerLast(new io.netty.handler.timeout.ReadTimeoutHandler(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS))
+                            .addHandlerLast(new io.netty.handler.timeout.WriteTimeoutHandler(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS))
                     );
+                log.info("WebClient configurado con timeout={}ms, insecureSkipTlsVerify=true", timeoutMs);
             } catch (SSLException e) {
                 throw new RuntimeException("Failed to build insecure SSL context for WebClient", e);
             }
-            builder = builder.clientConnector(new ReactorClientHttpConnector(httpClient));
+        } else {
+            httpClient = HttpClient.create(connectionProvider)
+                .responseTimeout(timeout)
+                .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, timeoutMs)
+                .option(io.netty.channel.ChannelOption.SO_KEEPALIVE, true)
+                .doOnConnected(conn ->
+                    conn.addHandlerLast(new io.netty.handler.timeout.ReadTimeoutHandler(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS))
+                        .addHandlerLast(new io.netty.handler.timeout.WriteTimeoutHandler(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS))
+                );
+            log.info("WebClient configurado con timeout={}ms, insecureSkipTlsVerify=false", timeoutMs);
         }
-        return builder;
+
+        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 }
