@@ -82,7 +82,7 @@ bff:
 
   mcp:
     endpoint: https://odoo.dev.expresolujan.com/mcp
-    timeoutMs: 10000
+    timeoutMs: 30000
     enabled: true
     mockEnabled: false
     experimentalUseRmcpClient: ${EXPERIMENTAL_USE_RMCP_CLIENT:true}
