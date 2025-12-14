@@ -3,6 +3,7 @@ package com.lujanita.bff.mcp;
 import com.lujanita.bff.model.dto.McpResponse;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -15,9 +16,10 @@ class McpClientWebClientServiceTest {
         // Arrange
         BffPropertiesMock props = new BffPropertiesMock();
         WebClient.Builder builder = WebClient.builder();
+        RestTemplate restTemplate = new RestTemplate();
         McpSessionService sessionService = Mockito.mock(McpSessionService.class);
         Mockito.when(sessionService.getSessionId()).thenReturn("test-session-id");
-        McpClientWebClientService service = new McpClientWebClientService(props, builder, sessionService);
+        McpClientWebClientService service = new McpClientWebClientService(props, builder, restTemplate, sessionService);
         // Simula endpoint inválido
         McpResponse resp = service.callMcp("test.method", Map.of(), Map.of()).block();
         assertNotNull(resp);
