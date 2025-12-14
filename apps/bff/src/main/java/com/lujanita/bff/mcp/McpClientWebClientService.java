@@ -102,8 +102,10 @@ public class McpClientWebClientService {
             .bodyValue(payload)
             .exchangeToMono(resp -> resp.bodyToMono(String.class).defaultIfEmpty(""))
             .retryWhen(
-                Retry.fixedDelay(3, Duration.ofMillis(300))
-                    .filter(e -> e instanceof reactor.netty.http.client.PrematureCloseException)
+                Retry.fixedDelay(2, Duration.ofSeconds(1))
+                    .filter(e -> isRetryableException(e))
+                    .doBeforeRetry(signal -> log.warn("[MCP][WebClient] Reintentando tras error (intento {}): {}", 
+                            signal.totalRetries() + 1, signal.failure().getMessage()))
                     .onRetryExhaustedThrow((spec, signal) -> signal.failure())
             )
             .map(body -> {
@@ -225,6 +227,36 @@ public class McpClientWebClientService {
         while (current != null) {
             if (current instanceof reactor.netty.http.client.PrematureCloseException) {
                 return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private boolean isRetryableException(Throwable e) {
+        if (e == null) return false;
+        
+        Throwable current = e;
+        while (current != null) {
+            // Retry on connection issues
+            if (current instanceof reactor.netty.http.client.PrematureCloseException) {
+                return true;
+            }
+            // Retry on timeout exceptions
+            if (current instanceof io.netty.handler.timeout.ReadTimeoutException) {
+                return true;
+            }
+            if (current instanceof io.netty.handler.timeout.WriteTimeoutException) {
+                return true;
+            }
+            // Retry on connection reset
+            if (current instanceof java.io.IOException) {
+                String msg = current.getMessage();
+                if (msg != null && (msg.contains("Connection reset") || 
+                                   msg.contains("Broken pipe") ||
+                                   msg.contains("Connection refused"))) {
+                    return true;
+                }
             }
             current = current.getCause();
         }
