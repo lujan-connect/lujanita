@@ -5,6 +5,8 @@ import com.lujanita.bff.config.BffProperties;
 import com.lujanita.bff.model.dto.McpResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.Optional;
+import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
@@ -23,6 +26,7 @@ import java.util.Optional;
 public class McpClientWebClientService {
     private final BffProperties bffProperties;
     private final WebClient.Builder webClientBuilder;
+    private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final McpSessionService mcpSessionService;
 
@@ -113,8 +117,36 @@ public class McpClientWebClientService {
             .map(body -> parseResponse(body))
             .onErrorResume(e -> {
                 log.warn("[MCP][WebClient] Error llamando MCP: {}", e.getMessage());
+                if (isPrematureClose(e)) {
+                    return callMcpWithRestTemplate(endpoint, payload, effectiveHeaders, e);
+                }
                 return Mono.just(errorResponse(e));
             });
+    }
+
+    private Mono<McpResponse> callMcpWithRestTemplate(
+            String endpoint,
+            Map<String, Object> payload,
+            Map<String, String> effectiveHeaders,
+            Throwable originalError
+    ) {
+        return Mono.fromCallable(() -> {
+            log.info("[MCP][WebClient] Reintentando con RestTemplate tras cierre prematuro: {}", originalError.getMessage());
+            HttpHeaders httpHeaders = new HttpHeaders();
+            effectiveHeaders.forEach(httpHeaders::set);
+            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, httpHeaders);
+            String body = restTemplate.postForEntity(endpoint, request, String.class).getBody();
+            String truncated = body;
+            if (truncated != null && truncated.length() > 500) {
+                truncated = truncated.substring(0, 500) + "...";
+            }
+            log.info("[MCP][RestTemplate-fallback] Respuesta HTTP body={}", truncated);
+            return parseResponse(body);
+        }).onErrorResume(fallbackError -> {
+            log.warn("[MCP][WebClient] Fallback RestTemplate también falló: {}", fallbackError.getMessage());
+            return Mono.just(errorResponse(fallbackError));
+        });
     }
 
     private McpResponse errorResponse(Throwable e) {
@@ -186,5 +218,16 @@ public class McpClientWebClientService {
             log.warn("[MCP][WebClient] No se pudo resolver mcp-session-id: {}", e.getMessage());
             return null;
         }
+    }
+
+    private boolean isPrematureClose(Throwable e) {
+        Throwable current = e;
+        while (current != null) {
+            if (current instanceof reactor.netty.http.client.PrematureCloseException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }
